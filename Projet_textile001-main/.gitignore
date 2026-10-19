@@ -1,0 +1,78 @@
+# Dépendances
+node_modules/
+
+# Build Next.js
+.next/
+out/
+build/
+
+# Base de données locale
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite
+
+# Environnement
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Divers
+.DS_Store
+*.tsbuildinfo
+
+# Auto-generated entries
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Sensitive files (auto-detected)
+.env.example
+dist-electron
+dist-electron-v24-fresh
+node_modules
+npm-install.log
+npm-reinstall.log
+npm-tsx.log
+tsconfig.tsbuildinfo
+
+# Artefacts de build Electron
+c/
+win-unpacked/
+release/
+*.asar
+
+# Build portable local (V1_textile) et données locales
+V1_textile/
+data/
+

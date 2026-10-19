@@ -1,0 +1,35 @@
+@layer theme, base, mui, components, utilities;
+
+/* Tailwind CSS 4 : le preflight (base) est volontairement omis
+   pour ne pas entrer en conflit avec CssBaseline de MUI. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@layer base {
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  ::selection {
+    background-color: rgba(21, 94, 117, 0.2);
+  }
+}
+
+@layer components {
+  /* Apparition discrète du contenu principal. */
+  .jo-fade-in {
+    animation: jo-fade-in 240ms ease-out;
+  }
+}
+
+@keyframes jo-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

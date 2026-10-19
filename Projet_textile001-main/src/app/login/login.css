@@ -1,0 +1,97 @@
+/* Page de connexion JO Management — direction artistique « maison de luxe
+textile » : fond encre, grain analogique, fils tissés animés, filets dorés. */
+
+.jm-root {
+  --jm-ink: #0a0e0c;
+  --jm-panel: #0d1410;
+  --jm-gold: #d8c49a;
+  --jm-emerald: #1fae74;
+  --jm-text: #eef0ea;
+  --jm-muted: #96a29a;
+  background:
+    radial-gradient(900px 620px at 6% -12%, rgba(31, 174, 116, 0.15), transparent 62%),
+    radial-gradient(760px 520px at 106% 112%, rgba(216, 196, 154, 0.09), transparent 58%),
+    var(--jm-ink);
+  color: var(--jm-text);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.jm-serif {
+  font-family: var(--font-display), Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+/* Grain analogique superposé (texture tissu) */
+.jm-grain {
+  position: relative;
+}
+.jm-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.32'/></svg>");
+}
+
+/* Révélation orchestrée au chargement */
+.jm-reveal {
+  opacity: 0;
+  animation: jmFadeUp 1s cubic-bezier(0.19, 0.7, 0.22, 1) forwards;
+}
+@keyframes jmFadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Balayage lumineux des boutons */
+.jm-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.jm-sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -80%;
+  width: 55%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.7s ease;
+}
+.jm-sheen:hover::after {
+  left: 135%;
+}
+
+/* Fils tissés en mouvement */
+.jm-threads {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.jm-thread {
+  fill: none;
+  stroke-width: 1;
+  stroke-dasharray: 5 9;
+  animation: jmDash 30s linear infinite;
+}
+@keyframes jmDash {
+  to { stroke-dashoffset: -600; }
+}
+
+.jm-hairline {
+  background: linear-gradient(90deg, transparent, rgba(216, 196, 154, 0.35), transparent);
+}
+
+::selection {
+  background: rgba(31, 174, 116, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jm-reveal { animation: none; opacity: 1; }
+  .jm-thread { animation: none; }
+  .jm-sheen::after { display: none; }
+}

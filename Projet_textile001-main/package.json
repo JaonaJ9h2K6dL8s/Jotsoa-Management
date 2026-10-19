@@ -1,0 +1,107 @@
+{
+  "name": "jo-management",
+  "version": "0.1.0",
+  "private": true,
+  "description": "JO Management — Gestion intégrée de l'entreprise",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0",
+    "desktop": "electron .",
+    "seed:catalogue": "tsx scripts/seed-catalogue-etendu.ts",
+    "desktop:build": "npm run build && node scripts/prepare-desktop.cjs && electron-builder --win portable",
+    "desktop:deps": "electron-builder install-app-deps",
+    "reset:data": "node scripts/reset-data.cjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check:lines": "node scripts/check-line-limit.mjs",
+    "create-admin": "tsx scripts/create-admin.ts",
+    "test:auth": "tsx scripts/test-auth.ts",
+    "test:config": "tsx scripts/test-config.ts",
+    "test:coupe": "tsx scripts/test-coupe.ts",
+    "test:coupe-workflow": "tsx scripts/test-coupe-workflow.ts",
+    "test:couture": "tsx scripts/test-couture.ts",
+    "test:cq": "tsx scripts/test-cq.ts",
+    "test:retouche": "tsx scripts/test-retouche.ts",
+    "test:stock": "tsx scripts/test-stock.ts",
+    "test:magasinier": "tsx scripts/test-magasinier.ts",
+    "test:securite": "tsx scripts/test-securite.ts",
+    "test:admin": "tsx scripts/test-admin.ts"
+  },
+  "build": {
+    "appId": "com.jo-management.app",
+    "productName": "JO Management",
+    "executableName": "JO-Management",
+    "directories": {
+      "output": "V1_textile"
+    },
+    "files": [
+      "electron/**/*",
+      ".next/standalone/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "."
+      }
+    ],
+    "asar": false,
+    "npmRebuild": false,
+    "compression": "store",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.png",
+      "artifactName": "JO-Management-Portable.exe"
+    },
+    "portable": {
+      "artifactName": "JO-Management-Portable.exe"
+    }
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
+    "@mui/material-nextjs": "^7.3.5",
+    "@mui/x-charts": "^8.27.0",
+    "@mui/x-data-grid": "^8.27.1",
+    "@mui/x-date-pickers": "^8.27.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.6.2",
+    "date-fns": "^4.1.0",
+    "jspdf": "^4.2.0",
+    "next": "15.5.12",
+    "qrcode": "^1.5.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "unpdf": "^1.8.1",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.12",
+    "node-abi": "^4.37.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
