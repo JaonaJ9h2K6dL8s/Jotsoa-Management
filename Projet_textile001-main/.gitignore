@@ -76,3 +76,6 @@ release/
 V1_textile/
 data/
 
+# Captures de vérification navigateur
+shots/
+
