@@ -25,7 +25,7 @@ export interface NestingResult {
   totalPiecesPerLayer: number; totalPiecesAllLayers: number; placedAreaM2: number; availableAreaM2: number;
   efficiency: number; wasteAreaM2: number; wasteKgEst: number | null; jobLengthM: number; warnings: string[];
   patternPieces: PatternPiece[]; wShrinkagePct: number; lShrinkagePct: number;
-  matelasLengthCm: number; marginCm: number; defects: FabricZone[]; oneWay: boolean; method: string;
+  matelasLengthCm: number; marginCm: number; gapCm?: number; defects: FabricZone[]; oneWay: boolean; method: string;
   availableAreaAllLayersM2: number; placedAreaAllLayersM2: number; unusedAreaAllLayersM2: number;
   consumptionM: number; consumptionKg: number | null; garmentCount: number;
   fiches: FicheDetail[]; revisionIds: number[];
@@ -106,7 +106,7 @@ export function computeMarker(actor: Actor, input: NestingInput): NestingResult 
     matelasLengthCm:length,usableWidthCm:width,layers,totalPiecesPerLayer:placements.length,totalPiecesAllLayers:placements.length*layers,
     placedAreaM2:placed,availableAreaM2:available,efficiency:placed/available*100,wasteAreaM2:unused,
     wasteKgEst:grammage == null ? null : unused*layers*grammage/1000,jobLengthM:placed/(width/100),
-    patternPieces:patterns,wShrinkagePct,lShrinkagePct,marginCm:margin,defects,oneWay,
+    patternPieces:patterns,wShrinkagePct,lShrinkagePct,marginCm:margin,gapCm:gap,defects,oneWay,
     method:input.manualLayout ? 'Placement manuel contrôlé' : input.optimize === false ? 'Placement glouton rapide par contours' : 'Placement glouton par contours et ancrages de sommets',
     availableAreaAllLayersM2:available*layers,placedAreaAllLayersM2:placed*layers,unusedAreaAllLayersM2:unused*layers,
     consumptionM:length*layers/100,consumptionKg:grammage == null ? null : available*layers*grammage/1000,

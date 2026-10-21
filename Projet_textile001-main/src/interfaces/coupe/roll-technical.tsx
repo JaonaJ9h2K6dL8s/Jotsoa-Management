@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Alert, Button, Checkbox, FormControlLabel, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import type { AtelierData } from '@/routes/coupe/atelier';
 
-export default function RollTechnical({data,busy,act}:{data:AtelierData;busy:boolean;act:(action:string,input?:unknown,id?:number)=>Promise<void>}) {
+export default function RollTechnical({data,busy,act}:{data:AtelierData;busy:boolean;act:(action:string,input?:unknown,id?:number)=>Promise<unknown>}) {
   const [id,setId]=useState('');
   const [values,setValues]=useState({widthCm:'',usableWidthCm:'',grammageGm2:'',remainingM:'',maxLayers:'',fabricLot:'',motif:'',thicknessMm:'',maxMatelasMm:''});
   const [reviewed,setReviewed]=useState(false);

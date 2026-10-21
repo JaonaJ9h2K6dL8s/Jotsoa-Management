@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sessionsDb } from '@/server/auth/sessions';
 import { technicalCatalogue } from '@/server/coupe/technical-catalogue';
 import { listRevisions, importRevision, validateRevision, archiveRevision } from '@/server/coupe/pattern-library';
+import { generatePatterns } from '@/server/coupe/pattern-generator';
 import { listFiches } from '@/server/coupe/fiches';
 import { createMarkerPlan, listMarkerPlans, getMarkerPlan, listCoupeTables, moveMarkerPieces, validateMarkerPlan } from '@/server/coupe/marker';
 import { computeMarker, type NestingInput } from '@/server/coupe/nesting';
@@ -47,6 +48,7 @@ export async function POST(request:Request) {
     let item:unknown;
     switch(body.action) {
       case 'import': item=importRevision(guard.actor,input);break;
+      case 'generate': item=generatePatterns(guard.actor,input as {ficheId:unknown;seamAllowanceCm?:unknown});break;
       case 'approve': item=validateRevision(guard.actor,body.id);break;
       case 'archive': archiveRevision(guard.actor,body.id);break;
       case 'roll': configureRoll(guard.actor,input);break;

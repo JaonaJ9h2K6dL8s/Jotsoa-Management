@@ -27,7 +27,9 @@
     "test:stock": "tsx scripts/test-stock.ts",
     "test:magasinier": "tsx scripts/test-magasinier.ts",
     "test:securite": "tsx scripts/test-securite.ts",
-    "test:admin": "tsx scripts/test-admin.ts"
+    "test:admin": "tsx scripts/test-admin.ts",
+    "test:coupe-patterns": "tsx scripts/test-pattern-generator.ts",
+    "test:coupe-plan-editing": "tsx scripts/test-plan-editing.ts"
   },
   "build": {
     "appId": "com.jo-management.app",

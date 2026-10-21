@@ -116,3 +116,8 @@ export function labelAnchor(points: Point[]): Point {
   }
   return anchor;
 }
+
+export function grainPermittedRotations(grainDirection: string, allowedRotations: number[], oneWay: boolean): number[] {
+  const byGrain = grainDirection === 'along' ? [0, 180] : grainDirection === 'cross' ? [90, 270] : [0, 90, 180, 270];
+  return allowedRotations.filter((rotation) => byGrain.includes(rotation) && (!oneWay || rotation === 0));
+}

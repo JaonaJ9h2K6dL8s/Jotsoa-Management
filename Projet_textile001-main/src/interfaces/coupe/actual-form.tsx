@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Alert, Button, Stack, TextField, Typography } from '@mui/material';
 import type { MarkerPlanRow } from '@/server/coupe/marker';
 
-export default function ActualForm({plan,busy,act}:{plan:MarkerPlanRow;busy:boolean;act:(action:string,input?:unknown,id?:number)=>Promise<void>}) {
+export default function ActualForm({plan,busy,act}:{plan:MarkerPlanRow;busy:boolean;act:(action:string,input?:unknown,id?:number)=>Promise<unknown>}) {
   const [values,setValues]=useState({lengthM:'',layers:'',weightKg:'',reusableKg:'',wasteKg:'',reason:''});
   const [counts,setCounts]=useState<Record<number,{cutQty:string;usableQty:string}>>({});
   if (plan.actual) return <Alert severity="success">Résultats réels enregistrés et tâche de coupe validée. Les composants restent consultables dans le ticket de suivi ; la remise physique et la réception couture restent à confirmer séparément.</Alert>;

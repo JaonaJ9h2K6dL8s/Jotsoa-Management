@@ -35,15 +35,17 @@ export default function Atelier() {
   const refresh=useCallback(async()=>setData(await request() as AtelierData),[]);
   useEffect(()=>{void refresh().catch((cause:Error)=>setError(cause.message));},[refresh]);
   function dirty(){setPlan(null);setResult(null);setNotice('');}
-  async function act(action:string,input?:unknown,id?:number) {
+  async function act(action:string,input?:unknown,id?:number):Promise<unknown> {
     setBusy(true);setError('');setNotice('');
     try {
       const item=await request({action,input,id});
       if (action==='verify') {setResult(item as NestingResult);setPlan(null);setNotice('Données vérifiées. Contrôlez le plan, puis enregistrez le brouillon.');}
+      else if (action==='generate') setNotice('Patrons générés en brouillon : examinez les contours puis approuvez la révision.');
       else if (['save','validate','actual'].includes(action)) {setPlan(item as MarkerPlanRow);setResult((item as MarkerPlanRow).result);setNotice(action==='validate'?'Plan validé et ticket de coupe généré.':action==='actual'?'Résultats et composants enregistrés sans réception couture automatique.':'Brouillon enregistré.');}
       else setNotice('Opération enregistrée et tracée.');
       await refresh();
-    } catch(cause) {setError(cause instanceof Error?cause.message:'Opération impossible.');}
+      return item;
+    } catch(cause) {setError(cause instanceof Error?cause.message:'Opération impossible.');return undefined;}
     finally {setBusy(false);}
   }
   const lot=data?.lots.find((item)=>item.id===Number(lotId));
@@ -74,13 +76,37 @@ export default function Atelier() {
     try {const item=await request(undefined,id) as MarkerPlanRow;setPlan(item);setResult(item.result);setTab(0);}
     catch(cause){setError(cause instanceof Error?cause.message:'Lecture impossible.');}finally{setBusy(false);}
   }
-  async function move(layout:NonNullable<NestingInput['manualLayout']>) {
+  // Chaque geste (glisser, rotation, coordonnées) passe par le contrôle
+  // serveur « verify » : autorité géométrique, sans persistance. Les
+  // coordonnées retenues ne sont enregistrées que par « Enregistrer les
+  // coordonnées retenues » (persistance existante du plan de placement).
+  async function commit(layout:NonNullable<NestingInput['manualLayout']>):Promise<boolean> {
     setBusy(true);setError('');
     try {
-      if (plan) {const saved=await request({action:'move',id:plan.id,layout}) as MarkerPlanRow;setPlan(saved);setResult(saved.result);}
-      else {const checked=await request({action:'verify',input:{...input(),manualLayout:layout}}) as NestingResult;setResult(checked);}
-      await refresh();setNotice('Déplacement contrôlé : limites, défauts, orientations et chevauchements vérifiés.');
-    } catch(cause){setError(cause instanceof Error?cause.message:'Déplacement refusé.');}finally{setBusy(false);}
+      const base=plan?.input??input();
+      const checked=await request({action:'verify',input:{...base,manualLayout:layout}}) as NestingResult;
+      setResult(checked);
+      return true;
+    } catch(cause){setError(cause instanceof Error?cause.message:'Déplacement refusé.');return false;}
+    finally{setBusy(false);}
+  }
+  async function reoptimize() {
+    if(result&&result.placements.length&&!window.confirm('Remplacer le placement actuel, y compris vos ajustements manuels, par une nouvelle optimisation automatique ?')) return;
+    setBusy(true);setError('');
+    try {
+      const base=plan?.input??input();
+      const checked=await request({action:'verify',input:{...base,optimize:true}}) as NestingResult;
+      setPlan(null);setResult(checked);
+      setNotice('Nouveau placement automatique calculé. Enregistrez le brouillon pour conserver cette version.');
+    } catch(cause){setError(cause instanceof Error?cause.message:'Réoptimisation impossible.');}
+    finally{setBusy(false);}
+  }
+  async function persistRetained() {
+    if(!result) return;
+    try {
+      const base=plan?.input??input();
+      await act('save',{...base,manualLayout:result.placements});
+    } catch(cause){setError(cause instanceof Error?cause.message:'Données invalides.');}
   }
   if (!data) return <Stack spacing={2}>{error?<Alert severity="error">{error}</Alert>:<CircularProgress/>}<Button onClick={()=>void refresh().catch((cause:Error)=>setError(cause.message))}>Recharger</Button></Stack>;
   return <Stack spacing={2}>
@@ -120,12 +146,12 @@ export default function Atelier() {
           <Stack direction={{xs:'column',sm:'row'}} spacing={2}>{(['start','end'] as const).map((field)=><TextField key={field} type="datetime-local" label={field==='start'?'Début de coupe':'Fin de coupe'} slotProps={{inputLabel:{shrink:true}}} value={config[field]} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>{dirty();setConfig({...config,[field]:event.target.value});}}/>)}</Stack>
           <TextField label="Zones interdites du matelas (cm, toutes couches) : [{x,y,widthCm,heightCm,label}]" multiline minRows={2} value={config.defects} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>{dirty();setConfig({...config,defects:event.target.value});}}/>
           <Typography variant="caption">Le sens unique vient du rouleau. Les défauts longitudinaux du rouleau nécessitent une projection par couche ; cette opération n’est pas simulée. Les raccords de motifs/rayures non pris en charge bloquent la validation.</Typography>
-          <Stack direction="row" gap={1} flexWrap="wrap"><Button variant="outlined" onClick={()=>generate('verify',false)}>Vérifier les données / plan rapide</Button><Button variant="contained" onClick={()=>generate('verify',true)}>Générer / optimiser le placement</Button><Button disabled={!result||Boolean(plan)} onClick={()=>{try{void act('save',{...input(),manualLayout:result?.placements});}catch(cause){setError((cause as Error).message);}}}>Enregistrer le brouillon affiché</Button></Stack>
+          <Stack direction="row" gap={1} flexWrap="wrap"><Button variant="outlined" onClick={()=>generate('verify',false)}>Vérifier les données / plan rapide</Button><Button variant="contained" onClick={()=>generate('verify',true)}>Générer / optimiser le placement</Button><Button variant="outlined" disabled={!result||busy||(plan!==null&&(!plan.input||plan.status==='valide'))} onClick={()=>void persistRetained()}>Enregistrer les coordonnées retenues (brouillon)</Button></Stack>
         </Stack></Paper>
         {result&&<Paper variant="outlined" sx={{p:2}}><Stack spacing={2}>
           <Stack direction="row" gap={1} flexWrap="wrap"><Chip label={`${result.totalPiecesAllLayers} pièces toutes couches`}/><Chip label={`${result.efficiency.toFixed(2)} % utilisation théorique`}/><Chip label={`${(result.availableAreaAllLayersM2??result.availableAreaM2*result.layers).toFixed(2)} m² disponibles`}/><Chip label={`${(result.unusedAreaAllLayersM2??result.wasteAreaM2*result.layers).toFixed(2)} m² non utilisés (pas des déchets déclarés)`}/>{result.consumptionKg!=null&&<Chip label={`${result.consumptionKg.toFixed(3)} kg théoriques`}/>}</Stack>
           {!plan?.input&&plan&&<Alert severity="warning">Plan historique sans provenance industrielle vérifiée. Consultable pour traçabilité, non réutilisable comme patron approuvé.</Alert>}
-          <PlanCanvas key={plan?.id??'preview'} result={result} editable={!busy&&(!plan||Boolean(plan.input)&&plan.status!=='valide')} onMove={(layout)=>void move(layout)}/>
+          <PlanCanvas key={plan?.id??'preview'} result={result} editable={!busy&&(!plan||Boolean(plan.input)&&plan.status!=='valide')} onMove={(layout)=>commit(layout)} onReoptimize={()=>void reoptimize()}/>
           {plan&&<Stack direction="row" gap={1} flexWrap="wrap"><Chip label={`MK-${plan.id} · ${plan.status}`}/><Button variant="contained" disabled={plan.status==='valide'||!plan.input||busy} onClick={()=>void act('validate',undefined,plan.id)}>Valider ce plan</Button><Button disabled={plan.status!=='valide'} onClick={()=>downloadPlacementPdf(plan)}>Télécharger le plan PDF</Button><Button disabled={plan.status!=='valide'} onClick={()=>downloadPlacementPng(plan)}>Télécharger l’image</Button>
             {plan.status==='valide'&&plan.result?.fiches?.map((fiche)=><Button key={`${fiche.id}:${fiche.version}`} onClick={()=>buildFichePdf(fiche,false,plan).save(ficheFileName(fiche))}>Fiche figée {fiche.sizeNom} V{fiche.version}</Button>)}
           </Stack>}

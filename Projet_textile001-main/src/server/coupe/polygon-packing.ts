@@ -1,11 +1,10 @@
 import { ServiceError } from '@/server/api/service-error';
-import { bounds, polygonArea, polygonsConflict, transformContour, zonePoints, type FabricZone, type Point } from '@/lib/coupe-geometry';
+import { bounds, grainPermittedRotations, polygonArea, polygonsConflict, transformContour, zonePoints, type FabricZone, type Point } from '@/lib/coupe-geometry';
 import type { PatternPiece } from './patterns';
 import type { NestingPlacement } from './nesting';
 
 export function permittedRotations(piece: PatternPiece, oneWay: boolean): number[] {
-  const byGrain = piece.grainDirection === 'along' ? [0,180] : piece.grainDirection === 'cross' ? [90,270] : [0,90,180,270];
-  return piece.allowedRotations.filter((rotation) => byGrain.includes(rotation) && (!oneWay || rotation === 0));
+  return grainPermittedRotations(piece.grainDirection, piece.allowedRotations, oneWay);
 }
 
 export function packContours(items: PatternPiece[], width: number, length: number, gap: number, margin: number,
