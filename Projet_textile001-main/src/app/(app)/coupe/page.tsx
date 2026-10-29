@@ -1,17 +1,19 @@
-import CoupeDashboard from '@/features/coupe/dashboard';
+import Box from '@mui/material/Box';
+import Workspace from '@/interfaces/cutting/Workspace';
 import { requirePageRole } from '@/server/auth/guards';
-import { getDashboard } from '@/server/coupe/dashboard';
 
-export const metadata = { title: 'Coupe' };
+export const metadata = { title: 'Atelier Coupe' };
 
 export const dynamic = 'force-dynamic';
 
 export default async function CoupePage() {
-  const user = await requirePageRole('chef_coupe');
-  const data = getDashboard({
-    id: user.id,
-    roleCode: user.roleCode,
-  });
-  const name = user.prenom ? `${user.prenom} ${user.nom}` : user.nom;
-  return <CoupeDashboard name={name} data={data} />;
+  await requirePageRole('chef_coupe', 'admin');
+  // Conteneur borné à la fenêtre (étape 10) : l'atelier occupe toute la
+  // hauteur visible sans défilement de page — le canvas et les panneaux
+  // gèrent leur propre défilement interne.
+  return (
+    <Box sx={{ height: 'calc(100vh - 112px)', minHeight: 560 }}>
+      <Workspace />
+    </Box>
+  );
 }

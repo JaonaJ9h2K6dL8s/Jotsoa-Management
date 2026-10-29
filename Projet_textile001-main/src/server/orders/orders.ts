@@ -6,8 +6,7 @@
 import { ServiceError } from '@/server/api/service-error';
 import { sessionsDb } from '@/server/auth/sessions';
 import type { Actor } from '@/server/users/users-service';
-import { requireId } from '../coupe/common';
-import { nextCode } from '@/server/coupe/common';
+import { nextCode, requireId } from './common';
 
 export interface OrderLineInput {
   sizeId: number;

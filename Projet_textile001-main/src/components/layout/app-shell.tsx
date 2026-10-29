@@ -10,6 +10,8 @@ import SidebarContent from './sidebar-content';
 import ServerStatusBadge from './server-status-badge';
 import TopBar, { DRAWER_WIDTH } from './top-bar';
 import { RealtimeBridge } from '@/components/realtime/realtime-bridge';
+import MascotBanner from '@/components/mascot/mascot-banner';
+import { homePathForRole } from '@/lib/permissions';
 
 /**
  * Coquille applicative authentifiée : barre latérale responsive
@@ -99,7 +101,10 @@ export default function AppShell({
         sx={{ position: 'relative', zIndex: 1 }}
       >
         <Toolbar />
-        <Box className="jo-fade-in p-4 md:p-6">{children}</Box>
+        <Box className="jo-fade-in p-4 md:p-6">
+          <MascotBanner homePath={homePathForRole(user.roleCode)} />
+          {children}
+        </Box>
       </Box>
     </Box>
   );

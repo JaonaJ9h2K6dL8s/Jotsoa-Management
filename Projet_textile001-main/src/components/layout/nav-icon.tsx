@@ -18,6 +18,7 @@ import {
   StraightenOutlined,
   CropFreeOutlined,
   QrCode2Outlined,
+  ScaleOutlined,
   type SvgIconComponent,
 } from '@mui/icons-material';
 import type { NavIconKey } from '@/lib/permissions';
@@ -40,6 +41,7 @@ const ICONS: Record<NavIconKey, SvgIconComponent> = {
   magasinier: LocalShippingOutlined,
   securite: SecurityOutlined,
   codes: QrCode2Outlined,
+  mesures: ScaleOutlined,
 };
 
 export default function NavIcon({

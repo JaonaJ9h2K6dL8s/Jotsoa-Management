@@ -21,6 +21,8 @@ export default async function LoginPage() {
     <Box
       className="jm-root jm-grain flex min-h-screen items-stretch justify-center"
     >
+      <Box className="jm-topline" aria-hidden />
+      <Box className="jm-dust" aria-hidden />
       <LoginForm adminExists={hasAnyAdmin()} />
       <ServerStatusBadge />
     </Box>

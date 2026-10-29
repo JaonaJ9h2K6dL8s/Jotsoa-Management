@@ -5,7 +5,7 @@ import {
   readJsonBody,
   rejectCrossOrigin,
   requireCoupeGuard,
-} from '@/server/coupe/route-helpers';
+} from '@/server/api/route-helpers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

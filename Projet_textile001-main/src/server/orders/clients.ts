@@ -5,7 +5,7 @@
 import { ServiceError } from '@/server/api/service-error';
 import { sessionsDb } from '@/server/auth/sessions';
 import type { Actor } from '@/server/users/users-service';
-import { requireId } from '../coupe/common';
+import { requireId } from './common';
 
 export interface ClientInput {
   nom: string;

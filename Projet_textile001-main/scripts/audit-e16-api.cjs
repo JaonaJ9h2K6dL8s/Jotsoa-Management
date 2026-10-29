@@ -1,0 +1,118 @@
+/* Audit E16 — scénario API complet sur le serveur isolé (port 3105).
+ * Base : data/audit-e16.db (copie). Jamais le plan #20. */
+const BASE = 'http://127.0.0.1:3105';
+let cookie = '';
+
+async function api(path, body) {
+  const response = await fetch(BASE + path, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cookie ? { cookie } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const setCookie = response.headers.get('set-cookie');
+  if (setCookie) cookie = setCookie.split(';')[0];
+  const text = await response.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch { json = { raw: text.slice(0, 200) }; }
+  return { status: response.status, json };
+}
+
+function counters(dbPath) {
+  const db = require('better-sqlite3')(dbPath, { readonly: true });
+  const one = (sql) => db.prepare(sql).get().c;
+  const result = {
+    rollMovements: one('SELECT COUNT(*) c FROM coupe_roll_movements'),
+    transfers: one('SELECT COUNT(*) c FROM coupe_transfers'),
+    lots: one('SELECT COUNT(*) c FROM coupe_lots'),
+    tickets: one('SELECT COUNT(*) c FROM production_tickets'),
+  };
+  db.close();
+  return result;
+}
+
+function placementsOf(planJson) {
+  return JSON.stringify(planJson.placements ?? JSON.parse(planJson.pieces_json ?? '[]'));
+}
+
+async function main() {
+  const DB = './data/audit-e16.db';
+  const before = counters(DB);
+  console.log(' compteurs avant :', JSON.stringify(before));
+
+  let login = await api('/api/auth/login', {
+    username: 'chef.coupe', password: 'Audit-E16-test',
+  });
+  for (let attempt = 0; attempt < 3 && login.json.status !== 'ok'; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    login = await api('/api/auth/login', {
+      username: 'chef.coupe', password: 'Audit-E16-test',
+    });
+  }
+  if (login.json.status !== 'ok') {
+    throw new Error('login échoué : ' + JSON.stringify(login).slice(0, 300));
+  }
+  console.log(' login chef.coupe : ok (rôle', login.json.user.roleCode + ')');
+
+  const PLAN_ID = 11; // brouillon avec révision validée (jamais le #20)
+  const plan1 = await api('/api/cutting/atelier', { action: 'plan.get', input: { planId: PLAN_ID } });
+  if (plan1.json.status !== 'ok') throw new Error('plan.get : ' + JSON.stringify(plan1.json));
+  const plan = plan1.json.item;
+  const initialPlacements = JSON.stringify(plan.placements);
+  console.log(' plan #' + PLAN_ID + ' :', plan.status, '| pièces placées :',
+    plan.placements.length, '| lot :', plan.lot_id);
+
+  const optimize = await api('/api/cutting/atelier', { action: 'plan.optimize', input: { planId: PLAN_ID } });
+  if (optimize.json.status !== 'ok') throw new Error('plan.optimize : ' + JSON.stringify(optimize.json));
+  const proposal = optimize.json.result;
+  console.log(' optimize :', proposal.method,
+    '| candidates :', JSON.stringify(proposal.candidates ?? []),
+    '| placées :', proposal.placements.length,
+    '| non placées :', proposal.unplaced.length,
+    '| longueur :', proposal.metrics.consumedLengthCm, 'cm',
+    '| taux :', proposal.metrics.utilizationPct + '%',
+    '| budget dépassé :', proposal.budgetExpired === true);
+
+  const afterOptimize = await api('/api/cutting/atelier', { action: 'plan.get', input: { planId: PLAN_ID } });
+  const unchanged = JSON.stringify(afterOptimize.json.item.placements) === initialPlacements;
+  console.log(' annulation (aucun enregistrement) : plan #' + PLAN_ID + ' inchangé =>', unchanged);
+
+  // Modification concurrente : on déplace la première pièce sous le
+  // paquet (zone libre => modification valide géométriquement).
+  const current = afterOptimize.json.item.placements;
+  const maxY = Math.max(...current.flatMap((placement) => placement.points.map((point) => point.y)));
+  const shifted = current[0].points.map((point) => ({ x: point.x, y: point.y - current[0].y + maxY + 10 }));
+  const moved = current.map((placement, index) => index === 0
+    ? { ...placement, x: shifted[0].x, y: shifted[0].y, points: shifted }
+    : placement);
+  const concurrentSave = await api('/api/cutting/atelier', {
+    action: 'plan.save', input: { planId: PLAN_ID, placements: moved },
+  });
+  console.log(' sauvegarde concurrente (pièce déplacée) :',
+    concurrentSave.json.status === 'ok' ? 'ok' : JSON.stringify(concurrentSave.json).slice(0, 200));
+
+  // Proposition obsolète (celle calculée AVANT la modification) rejouée.
+  const staleSave = await api('/api/cutting/atelier', {
+    action: 'plan.save', input: { planId: PLAN_ID, placements: proposal.placements },
+  });
+  const staleAccepted = staleSave.json.status === 'ok';
+  console.log(' acceptation de la proposition obsolète :',
+    staleAccepted ? 'ACCEPTEE (écrase la modification concurrente)'
+      : 'REJETEE (' + JSON.stringify(staleSave.json).slice(0, 200) + ')');
+
+  const finalPlan = await api('/api/cutting/atelier', { action: 'plan.get', input: { planId: PLAN_ID } });
+  const finalPlacements = JSON.stringify(finalPlan.json.item.placements);
+  console.log(' état final du plan #' + PLAN_ID + ' :',
+    finalPlacements === JSON.stringify(proposal.placements) ? '= proposition obsolète'
+      : finalPlacements === JSON.stringify(moved) ? '= modification concurrente'
+        : 'autre');
+
+  const after = counters(DB);
+  console.log(' compteurs après :', JSON.stringify(after));
+  console.log(' aucune consommation/transfert :',
+    JSON.stringify(before) === JSON.stringify(after) ? 'ok' : 'CHANGEMENT DETECTE');
+}
+
+main().catch((error) => { console.error('ECHEC AUDIT :', error.message); process.exit(1); });

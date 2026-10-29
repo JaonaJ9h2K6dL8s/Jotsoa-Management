@@ -1,0 +1,6 @@
+# Photos personnelles hors projet
+image/
+
+# Fichiers temporaires
+$null
+tmp-*.txt

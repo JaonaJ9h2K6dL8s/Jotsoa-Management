@@ -103,6 +103,8 @@ export interface CoutureRoomDTO {
 export interface PendingTransferDTO {
   transferId: number;
   transferCode: string;
+  /** Numéro de ticket lisible (TRF-AAAA-NNNNNN), absent sur l'historique. */
+  ticketNo: string | null;
   lotId: number;
   lotCode: string;
   productNom: string;
@@ -116,6 +118,7 @@ export interface ReceptionDTO {
   id: number;
   transferId: number;
   transferCode: string;
+  ticketNo: string | null;
   lotId: number;
   lotCode: string;
   status: 'complete' | 'partielle';

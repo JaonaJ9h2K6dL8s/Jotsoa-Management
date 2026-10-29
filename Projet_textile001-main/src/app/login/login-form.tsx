@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { apiPost } from '@/services/api-client';
 import type { LoginResponse } from '@/types/auth';
-import BrandPanel, { BrandMark } from './brand-panel';
+import BrandPanel, { BrandMark, ThreadMotif } from './brand-panel';
 import SetupFields from './setup-fields';
 
 /**
@@ -201,18 +201,30 @@ export default function LoginForm({ adminExists }: { adminExists: boolean }) {
         >
           {mode === 'login' ? (
             <>
-              <Typography
-                className="jm-serif jm-reveal"
-                sx={{ fontSize: { xs: 36, lg: 44 }, fontWeight: 400, lineHeight: 1.1 }}
-              >
-                Bon retour.
-              </Typography>
-              <Typography
-                className="jm-reveal"
-                sx={{ mt: 1.5, color: MUTED, fontSize: 15, animationDelay: '0.1s' }}
-              >
-                Accédez à votre espace de pilotage.
-              </Typography>
+              <Box sx={{ position: 'relative' }}>
+                <ThreadMotif
+                  right={-70}
+                  top={-26}
+                  width={230}
+                  height={120}
+                  flip
+                />
+                <Box sx={{ position: 'relative', zIndex: 1 }}>
+                  <Typography
+                    className="jm-serif jm-reveal"
+                    sx={{ fontSize: { xs: 36, lg: 44 }, fontWeight: 400, lineHeight: 1.1 }}
+                  >
+                    Bon retour.
+                  </Typography>
+                  <Typography
+                    className="jm-reveal"
+                    sx={{ mt: 1.5, color: MUTED, fontSize: 15, animationDelay: '0.1s' }}
+                  >
+                    Accédez à votre espace de pilotage.
+                  </Typography>
+                  <Box className="jm-ornament" aria-hidden />
+                </Box>
+              </Box>
               <Stack
                 id="login-form"
                 className="jm-reveal"
@@ -227,7 +239,7 @@ export default function LoginForm({ adminExists }: { adminExists: boolean }) {
                   type="submit"
                   disabled={loading}
                   startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-                  className="jm-sheen"
+                  className="jm-sheen jm-cta"
                   sx={{
                     mt: 1.5,
                     borderRadius: '10px',

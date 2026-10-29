@@ -20,8 +20,8 @@ export const WORKSPACES: Record<RoleCode, WorkspaceDefinition> = {
   },
   chef_coupe: {
     path: '/coupe',
-    title: 'Coupe',
-    subtitle: 'Suivi des opérations de coupe',
+    title: 'Atelier Coupe',
+    subtitle: 'Rouleaux, patrons vectoriels et placement sur table',
   },
   chef_couture: {
     path: '/couture',
@@ -76,7 +76,8 @@ export type NavIconKey =
   | 'stock'
   | 'magasinier'
   | 'securite'
-  | 'codes';
+  | 'codes'
+  | 'mesures';
 
 export interface NavItem {
   label: string;
@@ -99,18 +100,13 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { label: 'Salles et lignes', iconKey: 'couture', href: '/admin/couture', enabled: true },
     { label: 'Cadences', iconKey: 'cadences', href: '/admin/cadences', enabled: true },
     { label: 'Paramètres', iconKey: 'settings', href: '/admin/parametres', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
   chef_coupe: [
-    { label: 'Tableau de bord', iconKey: 'dashboard', href: '/coupe', enabled: true },
-    { label: 'Rouleaux', iconKey: 'coupe', href: '/coupe/rouleaux', enabled: true },
-    { label: 'Lots de coupe', iconKey: 'couture', href: '/coupe/lots', enabled: true },
-    { label: 'Fiches techniques', iconKey: 'produits', href: '/coupe/fiches', enabled: true },
-    { label: 'Préparation & patrons vérifiés', iconKey: 'coupe', href: '/coupe/preparation', enabled: true },
-    { label: 'Marker & patrons', iconKey: 'produits', href: '/coupe/marker', enabled: true },
-    { label: 'Tickets QR', iconKey: 'codes', href: '/coupe/tickets', enabled: true },
-    { label: 'Déchets et chutes', iconKey: 'retouche', href: '/coupe/dechets', enabled: true },
-    { label: 'Codes et QR', iconKey: 'qualite', href: '/coupe/codes', enabled: true },
-    { label: 'Historique', iconKey: 'settings', href: '/coupe/historique', enabled: true },
+    { label: 'Atelier Coupe', iconKey: 'coupe', href: '/coupe', enabled: true },
+    { label: 'Rouleaux & Produits', iconKey: 'produits', href: '/coupe/donnees', enabled: true },
+    { label: 'Mesures de coupe', iconKey: 'mesures', href: '/coupe/mesures', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
   chef_couture: [
     { label: 'Tableau de bord', iconKey: 'dashboard', href: '/couture', enabled: true },
@@ -122,6 +118,7 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { label: 'Transferts CQ', iconKey: 'qualite', href: '/couture/transferts', enabled: true },
     { label: 'Validations & alertes', iconKey: 'securite', href: '/couture/validations', enabled: true },
     { label: 'Historique', iconKey: 'magasinier', href: '/couture/historique', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
   controleur_qualite: [
     { label: 'Tableau de bord', iconKey: 'dashboard', href: '/controle-qualite', enabled: true },
@@ -132,6 +129,7 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { label: 'Transferts stock', iconKey: 'stock', href: '/controle-qualite/transferts', enabled: true },
     { label: 'Validations & alertes', iconKey: 'securite', href: '/controle-qualite/validations', enabled: true },
     { label: 'Historique', iconKey: 'settings', href: '/controle-qualite/historique', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
   retoucheur: [
     { label: 'Tableau de bord', iconKey: 'dashboard', href: '/retouche', enabled: true },
@@ -140,6 +138,7 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { label: 'Interventions', iconKey: 'qualite', href: '/retouche/interventions', enabled: true },
     { label: 'Retours CQ & rebuts', iconKey: 'stock', href: '/retouche/retours', enabled: true },
     { label: 'Historique & alertes', iconKey: 'settings', href: '/retouche/historique', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
   chef_stock: [
     { label: 'Tableau de bord', iconKey: 'dashboard', href: '/stock', enabled: true },
@@ -148,6 +147,7 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { label: 'Mouvements et stock', iconKey: 'qualite', href: '/stock/mouvements', enabled: true },
     { label: 'Inventaires', iconKey: 'retouche', href: '/stock/inventaires', enabled: true },
     { label: 'Historique & alertes', iconKey: 'settings', href: '/stock/historique', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
   chef_magasinier: [
     { label: 'Tableau de bord', iconKey: 'dashboard', href: '/magasinier', enabled: true },
@@ -156,6 +156,7 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { label: 'Préparation du stock', iconKey: 'stock', href: '/magasinier/preparations', enabled: true },
     { label: 'Dossiers de sortie', iconKey: 'qualite', href: '/magasinier/dossiers', enabled: true },
     { label: 'Historique & alertes', iconKey: 'settings', href: '/magasinier/historique', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
   chef_securite: [
     { label: 'Tableau de bord', iconKey: 'dashboard', href: '/securite', enabled: true },
@@ -163,5 +164,6 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { label: 'Anomalies', iconKey: 'qualite', href: '/securite/anomalies', enabled: true },
     { label: 'Décisions et sorties', iconKey: 'magasinier', href: '/securite/decisions', enabled: true },
     { label: 'Historique & alertes', iconKey: 'settings', href: '/securite/historique', enabled: true },
+    { label: 'Mon compte', iconKey: 'settings', href: '/mon-compte', enabled: true },
   ],
 };

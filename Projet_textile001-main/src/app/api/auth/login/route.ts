@@ -58,9 +58,12 @@ export async function POST(
       redirectTo,
     };
     const response = NextResponse.json(payload);
+    // Secure uniquement en HTTPS : les navigateurs rejettent les cookies
+    // Secure sur une adresse IP en HTTP simple (accès multi-postes).
+    const isHttps = new URL(request.url).protocol === 'https:';
     response.cookies.set(SESSION_COOKIE, result.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isHttps,
       sameSite: 'lax',
       path: '/',
       expires: new Date(result.expiresAt),

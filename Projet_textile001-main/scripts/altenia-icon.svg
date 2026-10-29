@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <circle cx="256" cy="256" r="252" fill="#ffffff"/>
+  <text x="256" y="262" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif" font-size="108" font-weight="700"
+        fill="#101828" letter-spacing="-2">Altenia</text>
+  <rect x="132" y="286" width="248" height="9" rx="4.5" fill="#101828"/>
+  <text x="256" y="330" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="600"
+        fill="#101828" letter-spacing="1.5">Technologie</text>
+</svg>

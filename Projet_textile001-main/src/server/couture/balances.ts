@@ -136,7 +136,7 @@ export function listPendingTransfers(actor: Actor): PendingTransferDTO[] {
   const db = sessionsDb();
   const transfers = db
     .prepare(
-      `SELECT t.id, t.code, t.lot_id, t.confirmed_at, l.code AS lot_code,
+      `SELECT t.id, t.code, t.ticket_no, t.lot_id, t.confirmed_at, l.code AS lot_code,
               p.nom AS product_nom, c.nom AS color_nom
        FROM coupe_transfers t
        JOIN coupe_lots l ON l.id = t.lot_id
@@ -151,6 +151,7 @@ export function listPendingTransfers(actor: Actor): PendingTransferDTO[] {
     .all() as Array<{
     id: number;
     code: string;
+    ticket_no: string | null;
     lot_id: number;
     confirmed_at: string;
     lot_code: string;
@@ -160,6 +161,7 @@ export function listPendingTransfers(actor: Actor): PendingTransferDTO[] {
   return transfers.map((transfer) => ({
     transferId: transfer.id,
     transferCode: transfer.code,
+    ticketNo: transfer.ticket_no,
     lotId: transfer.lot_id,
     lotCode: transfer.lot_code,
     productNom: transfer.product_nom,

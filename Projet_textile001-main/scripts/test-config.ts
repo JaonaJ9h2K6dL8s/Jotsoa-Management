@@ -73,11 +73,14 @@ async function main(): Promise<void> {
     assert.equal(new Set(rooms.map((room) => room.code)).size, 3);
   });
 
-  check('données de référence initiales (11 types, 6 couleurs, 6 tailles)', () => {
+  check('données de référence initiales (11 types, 6 couleurs, 12 tailles)', () => {
     // 11 = 6 catégories actives (migration 0011) + 5 anciens types désactivés.
+    // 12 tailles = 6 adultes XS→XXL (0003) + 6 enfant 2→12 ans (0015,
+    // requises par les FK pattern_revisions/coupe_component_results) ;
+    // la source de vérité par produit reste coupe_catalogue.size_names_json.
     assert.equal(listReference(SIMPLE_ENTITIES['product-types']).length, 11);
     assert.equal(listReference(SIMPLE_ENTITIES.colors).length, 6);
-    assert.equal(listReference(SIMPLE_ENTITIES.sizes).length, 6);
+    assert.equal(listReference(SIMPLE_ENTITIES.sizes).length, 12);
   });
 
   console.log('— Types de produits');

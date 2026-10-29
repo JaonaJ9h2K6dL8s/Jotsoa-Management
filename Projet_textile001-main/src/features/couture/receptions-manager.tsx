@@ -136,7 +136,8 @@ export default function ReceptionsManager() {
               >
                 <Stack>
                   <Typography variant="body1">
-                    {transfer.transferCode} — lot {transfer.lotCode}
+                    {transfer.ticketNo ?? transfer.transferCode}
+                    {' '}— lot {transfer.lotCode}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {transfer.productNom} — {transfer.colorNom} —{' '}
@@ -165,7 +166,8 @@ export default function ReceptionsManager() {
             <Paper key={reception.id} variant="outlined" className="p-3">
               <Stack direction="row" spacing={1} alignItems="center" useFlexGap>
                 <Typography variant="body1">
-                  {reception.transferCode} — lot {reception.lotCode}
+                  {reception.ticketNo ?? reception.transferCode}
+                  {' '}— lot {reception.lotCode}
                 </Typography>
                 <Chip
                   size="small"

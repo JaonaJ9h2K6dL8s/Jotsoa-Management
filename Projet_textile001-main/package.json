@@ -19,8 +19,6 @@
     "create-admin": "tsx scripts/create-admin.ts",
     "test:auth": "tsx scripts/test-auth.ts",
     "test:config": "tsx scripts/test-config.ts",
-    "test:coupe": "tsx scripts/test-coupe.ts",
-    "test:coupe-workflow": "tsx scripts/test-coupe-workflow.ts",
     "test:couture": "tsx scripts/test-couture.ts",
     "test:cq": "tsx scripts/test-cq.ts",
     "test:retouche": "tsx scripts/test-retouche.ts",
@@ -28,19 +26,20 @@
     "test:magasinier": "tsx scripts/test-magasinier.ts",
     "test:securite": "tsx scripts/test-securite.ts",
     "test:admin": "tsx scripts/test-admin.ts",
-    "test:coupe-patterns": "tsx scripts/test-pattern-generator.ts",
-    "test:coupe-plan-editing": "tsx scripts/test-plan-editing.ts"
+    "test:cutting": "tsx scripts/test-cutting.ts",
+    "test:mascots": "tsx scripts/test-mascots.ts"
   },
   "build": {
     "appId": "com.jo-management.app",
     "productName": "JO Management",
     "executableName": "JO-Management",
     "directories": {
-      "output": "V1_textile"
+      "output": "V1_jotsoa"
     },
     "files": [
       "electron/**/*",
-      ".next/standalone/**/*"
+      ".next/standalone/**/*",
+      "!node_modules/**/*"
     ],
     "extraResources": [
       {

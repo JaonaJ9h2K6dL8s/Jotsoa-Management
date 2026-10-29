@@ -17,7 +17,7 @@ export function listReceptions(actor: Actor): ReceptionDTO[] {
   const db = sessionsDb();
   const receptions = db
     .prepare(
-      `SELECT r.id, r.transfer_id, t.code AS transfer_code, r.lot_id,
+      `SELECT r.id, r.transfer_id, t.code AS transfer_code, t.ticket_no, r.lot_id,
               l.code AS lot_code, r.status, r.notes, r.received_at,
               u.nom || ' ' || u.prenom AS received_by_name
        FROM couture_receptions r
@@ -30,6 +30,7 @@ export function listReceptions(actor: Actor): ReceptionDTO[] {
     id: number;
     transfer_id: number;
     transfer_code: string;
+    ticket_no: string | null;
     lot_id: number;
     lot_code: string;
     status: 'complete' | 'partielle';
@@ -41,6 +42,7 @@ export function listReceptions(actor: Actor): ReceptionDTO[] {
     id: row.id,
     transferId: row.transfer_id,
     transferCode: row.transfer_code,
+    ticketNo: row.ticket_no,
     lotId: row.lot_id,
     lotCode: row.lot_code,
     status: row.status,

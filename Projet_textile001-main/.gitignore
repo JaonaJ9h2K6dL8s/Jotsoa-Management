@@ -78,4 +78,16 @@ data/
 
 # Captures de vérification navigateur
 shots/
+verification-capture/
+
+# Application packagée locale et données métier (à ne jamais publier)
+V1_jotsoa/
+
+# Photos personnelles hors projet
+image/
+
+# Fichiers temporaires de travail
+tmp-*.txt
+$null
+scripts/_splash-new.txt
 
