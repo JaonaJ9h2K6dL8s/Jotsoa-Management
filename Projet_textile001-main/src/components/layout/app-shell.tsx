@@ -28,6 +28,7 @@ export default function AppShell({
 }) {
   const mobileNavOpen = useUiStore((state) => state.mobileNavOpen);
   const closeMobileNav = useUiStore((state) => state.closeMobileNav);
+  const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
 
   return (
     <Box
@@ -65,7 +66,12 @@ export default function AppShell({
       <Box
         component="nav"
         aria-label="Navigation"
-        sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}
+        sx={{
+          width: { md: sidebarCollapsed ? 0 : DRAWER_WIDTH },
+          flexShrink: { md: 0 },
+          overflow: { md: 'hidden' },
+          transition: { md: 'width 220ms ease' },
+        }}
       >
         <Drawer
           variant="temporary"
@@ -79,21 +85,23 @@ export default function AppShell({
         >
           <SidebarContent roleCode={user.roleCode} />
         </Drawer>
-        <Drawer
-          variant="permanent"
-          open
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': {
-              width: DRAWER_WIDTH,
-              borderRight: '1px solid rgba(30,36,48,0.06)',
-              boxShadow: 'none',
-              backgroundImage: 'none',
-            },
-          }}
-        >
-          <SidebarContent roleCode={user.roleCode} />
-        </Drawer>
+        {!sidebarCollapsed && (
+          <Drawer
+            variant="permanent"
+            open
+            sx={{
+              display: { xs: 'none', md: 'block' },
+              '& .MuiDrawer-paper': {
+                width: DRAWER_WIDTH,
+                borderRight: '1px solid rgba(30,36,48,0.06)',
+                boxShadow: 'none',
+                backgroundImage: 'none',
+              },
+            }}
+          >
+            <SidebarContent roleCode={user.roleCode} />
+          </Drawer>
+        )}
       </Box>
       <Box
         component="main"

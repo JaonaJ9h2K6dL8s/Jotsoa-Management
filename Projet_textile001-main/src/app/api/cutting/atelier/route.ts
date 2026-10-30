@@ -30,6 +30,7 @@ import { importRevision } from '@/server/cutting/pattern-import';
 import { validateRevision } from '@/server/cutting/pattern-validate';
 import { createPlan, getPlan, verifyPlan } from '@/server/cutting/plans';
 import { optimizePlan } from '@/server/cutting/plans-optimize';
+import { autofillPlan } from '@/server/cutting/plans-autofill';
 import { remetricsPlan, savePlan, validatePlan } from '@/server/cutting/plans-save';
 import { createCutTicket, createCutTransfer } from '@/server/cutting/transfer';
 import {
@@ -66,6 +67,7 @@ const CHEF_ACTIONS = new Set([
   'plan.create',
   'plan.verify',
   'plan.optimize',
+  'plan.autofill',
   'plan.save',
   'plan.validate',
   'plan.get',
@@ -211,6 +213,8 @@ async function handle(
       return { result: verifyPlan(db, Number(input.planId), input.placements) };
     case 'plan.optimize':
       return { result: optimizePlan(db, actor, Number(input.planId)) };
+    case 'plan.autofill':
+      return { result: autofillPlan(db, actor, Number(input.planId)) };
     case 'plan.save':
       return { item: savePlan(db, actor, Number(input.planId), input.placements) };
     case 'plan.validate':

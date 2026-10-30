@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
+import Tooltip from '@mui/material/Tooltip';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { atelierAction, loadWorkspace } from './api';
 import type {
   PieceDTO, PlanDTO, RevisionDTO, RollDTO, TableDTO,
@@ -14,7 +18,6 @@ import PanelPieces from './PanelPieces';
 import PanelProperties from './PanelProperties';
 import PanelMetrics from './PanelMetrics';
 import PatternDemoPreview from './PatternDemoPreview';
-import StepSelectors from './StepSelectors';
 import TopBar from './TopBar';
 import WorkflowSteps from './WorkflowSteps';
 import CuttingCanvas from './canvas/CuttingCanvas';
@@ -39,9 +42,43 @@ interface Toast { message: string; severity: 'success' | 'error' | 'info' | 'war
 
 const DIRTY_CONFIRM = 'Ce plan contient des modifications non enregistrées. Continuer et perdre ces modifications ?';
 
+/** Rail vertical repliable (dock façon Illustrator) entre le canvas et les panneaux. */
+function DockRail({
+  side, open, onToggle,
+}: {
+  side: 'left' | 'right';
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const Chevron = side === 'left'
+    ? (open ? ChevronLeftIcon : ChevronRightIcon)
+    : (open ? ChevronRightIcon : ChevronLeftIcon);
+  return (
+    <Tooltip title={open ? `Masquer le panneau ${side === 'left' ? 'des pièces' : 'propriétés'}` : `Afficher le panneau ${side === 'left' ? 'des pièces' : 'propriétés'}`}>
+      <Box
+        sx={{
+          width: 22, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', bgcolor: 'background.paper',
+          borderRight: side === 'left' ? '1px solid' : undefined,
+          borderLeft: side === 'right' ? '1px solid' : undefined,
+          borderColor: 'divider',
+        }}
+      >
+        <IconButton size="small" onClick={onToggle} aria-label={open ? 'Replier le panneau' : 'Déplier le panneau'}
+          sx={{ '& svg': { fontSize: 18 }, '&:hover': { bgcolor: 'rgba(15,122,77,0.08)' } }}
+        >
+          <Chevron />
+        </IconButton>
+      </Box>
+    </Tooltip>
+  );
+}
+
 export default function Workspace() {
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [rollId, setRollId] = useState('');
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
   const [revisionId, setRevisionId] = useState('');
   const [plan, setPlan] = useState<PlanDTO | null>(null);
   const [tableId, setTableId] = useState('');
@@ -81,7 +118,7 @@ export default function Workspace() {
   const optimizer = usePlanOptimizer({ plan, revision, roll, history, canvasRef, setToast });
   const {
     optimizing, accepting, optimize, proposalPlacements, viewMode,
-    currentMetrics, currentWasteKg, runOptimize, acceptProposal, rejectProposal,
+    currentMetrics, currentWasteKg, runOptimize, runAutofill, acceptProposal, rejectProposal,
   } = optimizer;
 
   const refreshPlan = useCallback((next: PlanDTO) => {
@@ -198,10 +235,8 @@ export default function Workspace() {
     const source = history.state.find((item) => item.key === key);
     const piece = source ? revision?.pieces.find((item) => item.id === source.pieceId) : null;
     if (!source || !piece || !zone) return;
-    if (history.state.filter((item) => item.pieceId === source.pieceId).length >= piece.qty) {
-      setToast({ message: `Quantité requise atteinte pour « ${piece.label} » (×${piece.qty}).`, severity: 'warning' });
-      return;
-    }
+    // Duplication libre (Ctrl+clic ou bouton) : le chef de coupe remplit
+    // le matelas à sa main ; le serveur revalide tout à l'enregistrement.
     const clone = { ...source, key: `dup-${source.pieceId}-${Date.now()}`, x: source.x + 5, y: source.y + 5 };
     history.set([...history.state, clone], true);
   }, [history, revision, zone]);
@@ -291,31 +326,32 @@ export default function Workspace() {
         plan={plan} revision={revision} roll={roll} tables={workspace.tables} table={table}
         hasUnsaved={isDirty} canUndo={history.canUndo} canRedo={history.canRedo} saving={saving}
         optimizing={optimizing}
+        rolls={workspace.rolls}
+        revisions={workspace.revisions.filter((item) => item.status === 'valide')}
+        plans={workspace.plans}
+        rollId={rollId} revisionId={revisionId}
+        matelas={matelas} layers={layers}
+        onRollChange={setRollId} onRevisionChange={setRevisionId}
+        onMatelasChange={setMatelas} onLayersChange={setLayers}
+        onCreate={() => { void createPlan(); }} onOpen={(planId) => { void openPlan(planId); }}
         onTableChange={changeTable} onUndo={history.undo} onRedo={history.redo}
         onZoomIn={() => canvasRef.current?.zoomIn()} onZoomOut={() => canvasRef.current?.zoomOut()}
         onFit={() => canvasRef.current?.fitContent()}
         onFitTable={() => canvasRef.current?.fit()}
         onSave={savePlan} onOptimize={runOptimize}
-      />
-      <PatternDemoPreview products={workspace.catalogue} />
-      <StepSelectors
-        rolls={workspace.rolls}
-        revisions={workspace.revisions.filter((item) => item.status === 'valide')}
-        plans={workspace.plans}
-        rollId={rollId} revisionId={revisionId} table={table}
-        matelas={matelas} layers={layers}
-        onRollChange={setRollId} onRevisionChange={setRevisionId}
-        onMatelasChange={setMatelas} onLayersChange={setLayers}
-        onCreate={() => { void createPlan(); }} onOpen={(planId) => { void openPlan(planId); }}
-      />
-      <WorkflowSteps
-        rollSelected={roll !== null} productSelected={revision !== null}
-        revisionValide={revision !== null} planCreated={plan !== null}
-        hasPlacements={history.state.length > 0}
-        noViolations={displayedViolations.size === 0}
-        saved={!isDirty} planValide={plan?.status === 'valide'}
-        transferred={plan?.lot_id != null} dirty={isDirty}
-      />
+        autofilling={optimizing} onAutofill={() => { void runAutofill(); }}
+      >
+        <WorkflowSteps
+          compact
+          rollSelected={roll !== null} productSelected={revision !== null}
+          revisionValide={revision !== null} planCreated={plan !== null}
+          hasPlacements={history.state.length > 0}
+          noViolations={displayedViolations.size === 0}
+          saved={!isDirty} planValide={plan?.status === 'valide'}
+          transferred={plan?.lot_id != null} dirty={isDirty}
+        />
+        <PatternDemoPreview products={workspace.catalogue} inline />
+      </TopBar>
       {optimize && (
         <PanelOptimize
           proposal={optimize}
@@ -333,11 +369,14 @@ export default function Workspace() {
         />
       )}
       <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <PanelPieces
-          revision={revision} placedCounts={placedCounts}
-          onDragPiece={setDragPiece} onAddPiece={(piece) => dropPiece(piece.id, 5, 5)}
-        />
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minWidth: 0 }}
+        {leftOpen && (
+          <PanelPieces
+            revision={revision} placedCounts={placedCounts}
+            onDragPiece={setDragPiece} onAddPiece={(piece) => dropPiece(piece.id, 5, 5)}
+          />
+        )}
+        <DockRail side="left" open={leftOpen} onToggle={() => setLeftOpen((value) => !value)} />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 0.5, minWidth: 0 }}
           onDragOver={(event) => { if (dragPiece) event.preventDefault(); }}
           onDrop={(event) => {
             if (!dragPiece || !plan) return;
@@ -364,6 +403,7 @@ export default function Workspace() {
               onPlacementsChange={changePlacements}
               onPlacementsCommit={commitPlacements}
               onDropPiece={dropPiece}
+              onDuplicate={duplicatePlacement}
             />
           ) : (
             <Box sx={{ flex: 1, display: 'grid', placeItems: 'center', color: 'text.secondary' }}>
@@ -371,23 +411,26 @@ export default function Workspace() {
             </Box>
           )}
         </Box>
-        <Box sx={{ width: 280, flexShrink: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          <PanelProperties
-            revision={revision} selection={history.state.filter((item) => selectedKeys.includes(item.key))}
-            violations={displayedViolations} planStatus={plan?.status ?? 'proposition'}
-            efficiency={plan?.efficiency ?? 0}
-            onMove={movePlacement} onRotate={rotatePlacement}
-            onDelete={(key) => deleteSelection([key])} onDuplicate={duplicatePlacement}
-          />
-          <PanelMetrics
-            metrics={currentMetrics} wasteKgValue={currentWasteKg}
-            invalidCount={viewMode === 'current' ? displayedViolations.size : 0} summary={summary} plan={plan}
-            modelLabel={`Modèle : ${revision?.modelName ?? '—'} · Taille : ${sizeLabel}`}
-            placementCount={history.state.length} canValidatePlan={workspace.canValidatePlan}
-            planDirty={isDirty} validatingPlan={validatingPlan} onValidatePlan={handleValidatePlan}
-            onTransfer={handleTransfer} onRemetrics={handleRemetrics}
-          />
-        </Box>
+        <DockRail side="right" open={rightOpen} onToggle={() => setRightOpen((value) => !value)} />
+        {rightOpen && (
+          <Box sx={{ width: 280, flexShrink: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <PanelProperties
+              revision={revision} selection={history.state.filter((item) => selectedKeys.includes(item.key))}
+              violations={displayedViolations} planStatus={plan?.status ?? 'proposition'}
+              efficiency={plan?.efficiency ?? 0}
+              onMove={movePlacement} onRotate={rotatePlacement}
+              onDelete={(key) => deleteSelection([key])} onDuplicate={duplicatePlacement}
+            />
+            <PanelMetrics
+              metrics={currentMetrics} wasteKgValue={currentWasteKg}
+              invalidCount={viewMode === 'current' ? displayedViolations.size : 0} summary={summary} plan={plan}
+              modelLabel={`Modèle : ${revision?.modelName ?? '—'} · Taille : ${sizeLabel}`}
+              placementCount={history.state.length} canValidatePlan={workspace.canValidatePlan}
+              planDirty={isDirty} validatingPlan={validatingPlan} onValidatePlan={handleValidatePlan}
+              onTransfer={handleTransfer} onRemetrics={handleRemetrics}
+            />
+          </Box>
+        )}
       </Box>
       <Snackbar open={toast !== null} autoHideDuration={6000} onClose={() => setToast(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>

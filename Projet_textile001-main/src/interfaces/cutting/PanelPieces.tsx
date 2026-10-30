@@ -8,7 +8,6 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import type { PieceDTO, RevisionDTO } from './api';
-import PatternImage from './PatternImage';
 
 /**
  * Bibliothèque des patrons (panneau gauche, style Canva) :
@@ -153,11 +152,6 @@ export default function PanelPieces({ revision, placedCounts, onDragPiece, onAdd
           )}
         </Stack>
       </Box>
-      {revision && (
-        <Box sx={{ px: 1.5, pb: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-          <PatternImage revision={revision} />
-        </Box>
-      )}
     </Box>
   );
 }

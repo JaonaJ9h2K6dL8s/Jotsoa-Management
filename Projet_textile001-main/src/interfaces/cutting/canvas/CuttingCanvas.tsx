@@ -41,6 +41,8 @@ interface CuttingCanvasProps {
   onPlacementsChange: (next: UIPiece[], commit: boolean) => void;
   onPlacementsCommit: (baseline: UIPiece[], final: UIPiece[]) => void;
   onDropPiece: (pieceId: number, x: number, y: number) => void;
+  /** Ctrl+clic sur une pièce : duplique la pièce placée. */
+  onDuplicate?: (key: string) => void;
 }
 
 interface ViewState { x: number; y: number; w: number }
@@ -53,7 +55,7 @@ const CuttingCanvas = forwardRef<CanvasHandle, CuttingCanvasProps>(
     const {
       plan, table, pieces, placements, selectedKeys, violations,
       snapEnabled, dragPiece, onSelectionChange, onPlacementsChange,
-      onPlacementsCommit, onDropPiece, readOnly = false,
+      onPlacementsCommit, onDropPiece, onDuplicate, readOnly = false,
     } = props;
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
@@ -169,6 +171,12 @@ const CuttingCanvas = forwardRef<CanvasHandle, CuttingCanvasProps>(
       event.currentTarget.setPointerCapture(event.pointerId);
       if (pieceGroup && !dragPiece && !readOnly) {
         const key = pieceGroup.getAttribute('data-piece') ?? '';
+        // Ctrl+clic : duplication immédiate de la pièce placée.
+        if ((event.ctrlKey || event.metaKey) && onDuplicate) {
+          event.preventDefault();
+          onDuplicate(key);
+          return;
+        }
         const additive = event.shiftKey;
         onSelectionChange([key], additive);
         const originals = (additive

@@ -312,6 +312,55 @@ export interface OptimizeResult {
   wasteKg: number | null;
   grammageGm2: number | null;
   availableLengthCm: number;
+  /** Jeux complets placés sur le matelas (calcul auto). */
+  setsCount?: number;
+  /** Pièces par jeu complet (ex. polo = 6). */
+  piecesPerSet?: number;
+  /** Couches de tissu du plan. */
+  layers?: number;
+  /** Vêtements obtenus = jeux × couches. */
+  garmentsTotal?: number;
+  /** Pièces coupées obtenues. */
+  piecesTotal?: number;
+}
+
+/** Matelas dupliqué automatiquement (remplissage multi-matelas). */
+export interface AutofillDuplicate {
+  planId: number;
+  /** Jeux complets placés sur ce matelas dupliqué. */
+  sets: number;
+}
+
+/** Résultat de l'action plan.autofill (calcul automatique multi-matelas). */
+export interface AutofillResult {
+  placements: OptimizePlacementDTO[];
+  method: 'shelf-ffd' | 'nest-blf';
+  metrics: OptimizeMetrics;
+  /** Pièces par jeu complet (ex. polo = 6). */
+  piecesPerSet: number;
+  /** Jeux complets sur CE matelas (matelas plein). */
+  setsOnPlan: number;
+  /** Capacité d'un matelas plein : jeux complets qui tiennent. */
+  capacitySets: number;
+  layers: number;
+  /** Vêtements par matelas plein = capacitySets × couches. */
+  garmentsPerMatelas: number;
+  /** Pièces brutes par matelas plein. */
+  piecesPerMatelas: number;
+  /** Métrage de tissu consommé par matelas (m) = longueur × couches. */
+  fabricPerMatelasM: number;
+  /** Métrage disponible sur le rouleau (m), null si inconnu. */
+  rollAvailableM: number | null;
+  /** Métrage restant après coupe de tous les matelas (m). */
+  rollRemainingAfterM: number | null;
+  /** Nombre total de matelas pleins (plan courant + dupliqués). */
+  totalMatelas: number;
+  /** Vêtements totaux obtenus. */
+  totalGarments: number;
+  /** Pièces totales obtenues (tous matelas). */
+  totalPieces: number;
+  /** Matelas dupliqués créés et remplis automatiquement. */
+  duplicates: AutofillDuplicate[];
 }
 
 /** Métriques enregistrées d'un plan, avant et après recalcul explicite. */

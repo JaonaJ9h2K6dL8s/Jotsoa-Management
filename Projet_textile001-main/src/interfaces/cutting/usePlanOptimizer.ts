@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { RefObject } from 'react';
 import { atelierAction } from './api';
 import type {
-  OptimizeMetrics, OptimizeResult, PlanDTO, RevisionDTO, RollDTO, VerifyResult,
+  AutofillResult, OptimizeMetrics, OptimizeResult, PlanDTO, RevisionDTO, RollDTO, VerifyResult,
 } from './api';
 import { computeMetrics, wasteKg } from '@/lib/cutting/optimizer';
 import { transformContour } from '@/lib/cutting/geometry';
@@ -125,6 +125,61 @@ export function usePlanOptimizer(options: UsePlanOptimizerOptions) {
     setViewMode('current');
   }, []);
 
+  /**
+   * Calcul automatique multi-matelas : remplit le matelas de jeux
+   * complets du patron, borne le nombre de matelas par le stock du
+   * rouleau (métrage, grammage, couches), puis duplique les matelas.
+   */
+  const runAutofill = useCallback(async () => {
+    if (!plan) return;
+    setOptimizing(true);
+    try {
+      const result = await atelierAction<AutofillResult>('plan.autofill', {
+        planId: plan.id,
+      });
+      setProposalPlacements(
+        result.placements.map((placement, index) => placementToUi(placement, index)),
+      );
+      setOptimize({
+        planId: plan.id,
+        revisionId: 0,
+        method: result.method,
+        placements: result.placements,
+        unplaced: [],
+        metrics: result.metrics,
+        wasteKg: null,
+        grammageGm2: null,
+        availableLengthCm: plan.matelas_length_cm,
+      });
+      setViewMode('proposal');
+      requestAnimationFrame(() => canvasRef.current?.fit());
+      const rollInfo = result.rollAvailableM !== null
+        ? ` Rouleau : ${result.rollAvailableM.toFixed(1)} m disponibles → `
+          + `${result.totalMatelas} matelas plein(s) de `
+          + `${result.fabricPerMatelasM.toFixed(1)} m chacun, reste `
+          + `${result.rollRemainingAfterM?.toFixed(1)} m après coupe.`
+        : '';
+      const dupInfo = result.duplicates.length > 0
+        ? ` ${result.duplicates.length} matelas dupliqué(s) automatiquement `
+          + `(${result.duplicates.map((dup) => `#${dup.planId}`).join(', ')}).`
+        : '';
+      setToast({
+        message: `Calcul automatique — patron ${result.piecesPerSet} pièces : `
+          + `matelas plein = ${result.capacitySets} jeux × ${result.layers} couche(s) `
+          + `= ${result.garmentsPerMatelas} vêtements / ${result.piecesPerMatelas} pièces.`
+          + rollInfo
+          + ` Total : ${result.totalGarments} vêtements, `
+          + `${result.totalPieces} pièces obtenues.`
+          + dupInfo,
+        severity: 'success',
+      });
+    } catch (error) {
+      setToast({ message: (error as Error).message, severity: 'error' });
+    } finally {
+      setOptimizing(false);
+    }
+  }, [plan, canvasRef, setToast]);
+
   /** Réinitialise la proposition (chargement d'un autre plan, etc.). */
   const resetProposal = useCallback(() => {
     setOptimize(null);
@@ -135,6 +190,6 @@ export function usePlanOptimizer(options: UsePlanOptimizerOptions) {
   return {
     optimizing, accepting, optimize, proposalPlacements, viewMode,
     currentMetrics, currentWasteKg,
-    runOptimize, acceptProposal, rejectProposal, resetProposal,
+    runOptimize, runAutofill, acceptProposal, rejectProposal, resetProposal,
   };
 }

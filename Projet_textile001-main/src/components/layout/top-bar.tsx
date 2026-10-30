@@ -17,6 +17,7 @@ import Paper from '@mui/material/Paper';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useUiStore } from '@/store/ui-store';
 import type { SessionUser } from '@/types/auth';
@@ -34,7 +35,13 @@ export const DRAWER_WIDTH = 280;
  */
 export default function TopBar({ user }: { user: SessionUser }) {
   const toggleMobileNav = useUiStore((state) => state.toggleMobileNav);
+  const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
+  const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const router = useRouter();
+  const pathname = usePathname();
+  // Mode atelier (pages /coupe/*) : barre minimale dense façon Illustrator —
+  // sans recherche ni encombrement, pour laisser toute la hauteur au canvas.
+  const isWorkshop = pathname.startsWith('/coupe');
   const [loggingOut, setLoggingOut] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -71,11 +78,15 @@ export default function TopBar({ user }: { user: SessionUser }) {
       elevation={0}
       sx={{
         borderBottom: '1px solid rgba(30,36,48,0.06)',
-        width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-        ml: { md: `${DRAWER_WIDTH}px` },
+        width: {
+          md: `calc(100% - ${sidebarCollapsed ? 0 : DRAWER_WIDTH}px)`,
+        },
+        ml: { md: `${sidebarCollapsed ? 0 : DRAWER_WIDTH}px` },
+        transition: 'width 220ms ease, margin 220ms ease',
       }}
     >
-      <Toolbar className="gap-2">
+      <Toolbar variant={isWorkshop ? 'dense' : undefined} className="gap-2">
+        {/* Hamburger mobile : ouvre le tiroir de navigation */}
         <IconButton
           aria-label="Ouvrir la navigation"
           edge="start"
@@ -84,11 +95,35 @@ export default function TopBar({ user }: { user: SessionUser }) {
         >
           <MenuIcon />
         </IconButton>
-        <Typography variant="h6" component="h1" noWrap sx={{ fontWeight: 800, fontSize: 20 }}>
+        {/* Hamburger grand écran : affiche ou masque la barre latérale */}
+        <IconButton
+          aria-label={
+            sidebarCollapsed
+              ? 'Afficher la barre latérale'
+              : 'Masquer la barre latérale'
+          }
+          edge="start"
+          onClick={toggleSidebar}
+          sx={{
+            display: { xs: 'none', md: 'inline-flex' },
+            mr: 1,
+            transition: 'transform 220ms ease',
+            '&:hover': { backgroundColor: 'rgba(15,122,77,0.08)' },
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
+        <Typography
+          variant="h6"
+          component="h1"
+          noWrap
+          sx={{ fontWeight: 800, fontSize: isWorkshop ? 16 : 20 }}
+        >
           {user.roleLabel}
         </Typography>
 
-        {/* Recherche rapide de navigation */}
+        {/* Recherche rapide de navigation (masquée en mode atelier) */}
+        {!isWorkshop && (
         <Box sx={{ position: 'relative', flex: 1, maxWidth: 460, mx: 'auto', px: { xs: 0, md: 2 } }}>
           <InputBase
             value={query}
@@ -157,9 +192,11 @@ export default function TopBar({ user }: { user: SessionUser }) {
             </Paper>
           ) : null}
         </Box>
+        )}
 
-        <RealtimeStatus />
+        {!isWorkshop && <RealtimeStatus />}
 
+        {!isWorkshop && (
         <Box className="hidden items-center gap-2 sm:flex">
           <Box className="text-right leading-tight">
             <Typography variant="body2" noWrap sx={{ fontWeight: 700 }}>
@@ -184,6 +221,7 @@ export default function TopBar({ user }: { user: SessionUser }) {
             {(user.prenom?.[0] ?? user.nom[0] ?? '?').toUpperCase()}
           </Avatar>
         </Box>
+        )}
         <Button
           onClick={handleLogout}
           disabled={loggingOut}
@@ -191,7 +229,8 @@ export default function TopBar({ user }: { user: SessionUser }) {
           color="inherit"
           sx={{
             borderRadius: '10px',
-            px: 1.5,
+            px: isWorkshop ? 0.75 : 1.5,
+            minWidth: 0,
             color: 'text.secondary',
             '&:hover': {
               color: 'error.main',
@@ -199,7 +238,7 @@ export default function TopBar({ user }: { user: SessionUser }) {
             },
           }}
         >
-          Déconnexion
+          {isWorkshop ? '' : 'Déconnexion'}
         </Button>
       </Toolbar>
     </AppBar>
