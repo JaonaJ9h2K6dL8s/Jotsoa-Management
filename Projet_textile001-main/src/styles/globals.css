@@ -1,32 +1,45 @@
-@layer theme, base, mui, components, utilities;
+@import 'tailwindcss';
 
-/* Tailwind CSS 4 : le preflight (base) est volontairement omis
-   pour ne pas entrer en conflit avec CssBaseline de MUI. */
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+/* Habillage global JO Management — palette encre / or / émeraude.
+   (La couleur de fond et la sélection sont aussi définies dans le
+   thème MUI ; ici on règle le socle navigateur.) */
 
-@layer base {
-  html,
-  body {
-    min-height: 100%;
-  }
-
-  ::selection {
-    background-color: rgba(21, 94, 117, 0.2);
-  }
+html,
+body {
+  min-height: 100%;
 }
 
-@layer components {
-  /* Apparition discrète du contenu principal. */
-  .jo-fade-in {
-    animation: jo-fade-in 240ms ease-out;
-  }
+/* Scrollbar fine et discrète, dans la palette encre de l'atelier. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 31, 28, 0.22) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(25, 31, 28, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(25, 31, 28, 0.32);
+}
+
+/* Apparition discrète du contenu principal. */
+.jo-fade-in {
+  animation: jo-fade-in 260ms cubic-bezier(0.19, 0.7, 0.22, 1);
 }
 
 @keyframes jo-fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(5px);
   }
   to {
     opacity: 1;

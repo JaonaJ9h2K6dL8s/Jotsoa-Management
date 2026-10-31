@@ -17,27 +17,31 @@ import type { RoleCode } from '@/lib/roles';
 import NavIcon from './nav-icon';
 
 /**
- * Contenu de la barre latérale, style « dashboard premium » : identité
- * de l'application, navigation filtrée selon le rôle avec pilule active
- * pleine, et carte annonce en bas. Le filtrage visuel complète mais ne
- * remplace jamais les vérifications côté serveur.
+ * Contenu de la barre latérale, style « maison de luxe textile » :
+ * panneau encre foncé avec filets dorés (aligné sur la page de
+ * connexion), navigation filtrée selon le rôle avec pilule active
+ * émeraude sertie d'or, et carte annonce en bas. Le filtrage visuel
+ * complète mais ne remplace jamais les vérifications côté serveur.
  */
 
 const itemSx = {
   borderRadius: '10px',
   mb: 0.25,
-  color: 'text.secondary',
+  color: '#b7c2ba',
   '& .MuiListItemIcon-root': { color: 'inherit', minWidth: 42 },
   '&:hover': {
-    backgroundColor: 'rgba(15,122,77,0.06)',
-    color: 'primary.main',
+    backgroundColor: 'rgba(216,196,154,0.10)',
+    color: '#eef0ea',
   },
   '&.Mui-selected': {
-    backgroundColor: 'primary.main',
+    background: 'linear-gradient(135deg, #0a4f33 0%, #0e6b44 60%, #1c9e6b 140%)',
     color: '#fff',
-    boxShadow: '0 8px 18px rgba(15,122,77,0.35)',
-    '& .MuiListItemIcon-root': { color: '#fff' },
-    '&:hover': { backgroundColor: 'primary.main' },
+    boxShadow:
+      'inset 0 0 0 1px rgba(216,196,154,0.40), 0 8px 20px rgba(10,79,51,0.45)',
+    '& .MuiListItemIcon-root': { color: '#d8c49a' },
+    '&:hover': {
+      background: 'linear-gradient(135deg, #0a4f33 0%, #0e6b44 60%, #1c9e6b 140%)',
+    },
   },
 } as const;
 
@@ -48,36 +52,65 @@ export default function SidebarContent({ roleCode }: { roleCode: RoleCode }) {
   return (
     <Box className="flex h-full flex-col">
       <Toolbar className="items-center">
-        <Box className="flex items-center gap-2 py-1">
+        <Box className="flex items-center gap-2.5 py-1">
           <Box
+            className="jm-mark"
             aria-hidden
             sx={{
               width: 40,
               height: 40,
-              borderRadius: '12px',
+              borderRadius: '50%',
+              border: '1px solid rgba(216,196,154,0.55)',
               display: 'grid',
               placeItems: 'center',
               flexShrink: 0,
-              color: '#fff',
-              fontWeight: 800,
-              fontSize: 14,
-              letterSpacing: '0.02em',
-              background: 'linear-gradient(135deg, #0a5c3c, #1fae74)',
-              boxShadow: '0 6px 14px rgba(15,122,77,0.35)',
             }}
           >
-            JO
+            <Typography
+              sx={{
+                fontFamily: 'var(--font-display), Georgia, serif',
+                color: '#d8c49a',
+                fontWeight: 600,
+                fontSize: 14,
+                letterSpacing: '0.08em',
+              }}
+            >
+              JO
+            </Typography>
           </Box>
           <Box>
-            <Typography variant="subtitle1" component="p" className="leading-tight">
+            <Typography
+              component="p"
+              className="leading-tight"
+              sx={{
+                fontFamily: 'var(--font-display), Georgia, serif',
+                color: '#eef0ea',
+                fontSize: 16.5,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+              }}
+            >
               JO Management
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{ color: 'rgba(216,196,154,0.75)', letterSpacing: '0.06em' }}
+            >
               Gestion intégrée de l’entreprise
             </Typography>
           </Box>
         </Box>
       </Toolbar>
+      <Box
+        aria-hidden
+        sx={{
+          mx: 2,
+          height: '1px',
+          flexShrink: 0,
+          background:
+            'linear-gradient(90deg, transparent, rgba(216,196,154,0.35), transparent)',
+        }}
+      />
       <List dense className="flex-1 overflow-y-auto" sx={{ px: 0.5, pt: 1 }}>
         {items.map((item) => {
           const selected = item.href !== undefined && pathname.startsWith(item.href);
@@ -85,7 +118,16 @@ export default function SidebarContent({ roleCode }: { roleCode: RoleCode }) {
             <ListItem key={item.label} disablePadding
               secondaryAction={
                 item.enabled ? undefined : (
-                  <Chip label="À venir" size="small" variant="outlined" />
+                  <Chip
+                    label="À venir"
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      borderColor: 'rgba(216,196,154,0.40)',
+                      color: 'rgba(216,196,154,0.85)',
+                      fontSize: 11,
+                    }}
+                  />
                 )
               }
             >
@@ -106,7 +148,7 @@ export default function SidebarContent({ roleCode }: { roleCode: RoleCode }) {
                   />
                 </ListItemButton>
               ) : (
-                <ListItemButton disabled aria-label={item.label} sx={itemSx}>
+                <ListItemButton disabled aria-label={item.label} sx={{ ...itemSx, opacity: 0.55 }}>
                   <ListItemIcon>
                     <NavIcon iconKey={item.iconKey} />
                   </ListItemIcon>
@@ -127,10 +169,11 @@ export default function SidebarContent({ roleCode }: { roleCode: RoleCode }) {
             position: 'relative',
             overflow: 'hidden',
             borderRadius: '16px',
+            border: '1px solid rgba(216,196,154,0.22)',
             p: 2.5,
             color: '#fff',
-            background: 'linear-gradient(150deg, #0d6b45 0%, #0a5c3c 55%, #07352a 100%)',
-            boxShadow: '0 14px 30px rgba(10,92,60,0.35)',
+            background: 'linear-gradient(150deg, #0d1a13 0%, #0a1710 55%, #07100b 100%)',
+            boxShadow: 'inset 0 0 0 1px rgba(216,196,154,0.06)',
           }}
         >
           <Box
@@ -141,26 +184,34 @@ export default function SidebarContent({ roleCode }: { roleCode: RoleCode }) {
               width: 110,
               height: 110,
               borderRadius: '50%',
-              background: 'rgba(255,255,255,0.10)',
+              background: 'rgba(216,196,154,0.08)',
             }}
           />
           <Box
             sx={{
               width: 36,
               height: 36,
-              borderRadius: '10px',
+              borderRadius: '50%',
+              border: '1px solid rgba(216,196,154,0.45)',
               display: 'grid',
               placeItems: 'center',
-              backgroundColor: 'rgba(255,255,255,0.16)',
+              color: '#d8c49a',
               mb: 1.5,
             }}
           >
             <AutoAwesome fontSize="small" />
           </Box>
-          <Typography variant="subtitle2" sx={{ fontSize: 15 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontFamily: 'var(--font-display), Georgia, serif',
+              fontSize: 15,
+              letterSpacing: '0.02em',
+            }}
+          >
             JO Analytics
           </Typography>
-          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)', display: 'block', mt: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'rgba(183,194,186,0.8)', display: 'block', mt: 0.5 }}>
             Pilotage avancé de votre production, bientôt dans votre espace.
           </Typography>
           <Box
@@ -170,10 +221,13 @@ export default function SidebarContent({ roleCode }: { roleCode: RoleCode }) {
               px: 2,
               py: 0.75,
               borderRadius: 999,
-              backgroundColor: '#fff',
-              color: '#0a5c3c',
-              fontSize: 12.5,
+              border: '1px solid rgba(216,196,154,0.45)',
+              background: 'linear-gradient(90deg, rgba(216,196,154,0.14), rgba(216,196,154,0.04))',
+              color: '#d8c49a',
+              fontSize: 11,
               fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
             }}
           >
             Bientôt disponible

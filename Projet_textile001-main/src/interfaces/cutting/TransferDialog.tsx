@@ -61,6 +61,14 @@ export default function TransferDialog(props: TransferDialogProps) {
     qty: row.placed,
   }));
   const totalCut = cutRows.reduce((sum, row) => sum + row.placed * layers, 0);
+  // Aperçu fidèle au calcul serveur (transfer.ts) : le nombre de
+  // vêtements transférables est le minimum des (coupé ÷ quantité
+  // requise par vêtement) sur toutes les pièces du patron complet.
+  const piecesPerGarment = cutRows.reduce((sum, row) => sum + Math.max(1, row.expected), 0);
+  const garments = cutRows.length > 0
+    ? Math.min(...cutRows.map((row) => Math.floor((row.placed * layers) / Math.max(1, row.expected))))
+    : 0;
+  const surplusPieces = totalCut - garments * piecesPerGarment;
 
   const reset = (): void => {
     setConfirmed(false);
@@ -158,6 +166,18 @@ export default function TransferDialog(props: TransferDialogProps) {
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
               Total : {totalCut} pièce(s) coupée(s).
             </Typography>
+            <Alert severity="success" sx={{ py: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                → {garments} vêtement(s) prêt(s) pour la Couture
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                1 vêtement = {piecesPerGarment} pièce(s) de patron (jeu complet),
+                {layers} couche(s) incluses.
+                {surplusPieces > 0
+                  ? ` ${surplusPieces} pièce(s) en surplus au-delà des vêtements complets.`
+                  : ' Aucune pièce en surplus.'}
+              </Typography>
+            </Alert>
             <FormControlLabel
               control={(
                 <Checkbox

@@ -16,6 +16,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import type { RtAssignmentDTO, RtInterventionDTO } from '@/types/retouche';
 import { RT_RESULT_LABELS } from '@/types/retouche';
+import WorkTimer from '@/components/common/work-timer';
 import { sendRt, useRtData } from './use-retouche';
 
 /**
@@ -209,9 +210,15 @@ export default function InterventionsManager() {
                   )
                   .join(' · ')}
               </Typography>
+              <WorkTimer
+                startedAt={intervention.startedAt}
+                endedAt={intervention.endedAt}
+                workedSeconds={0}
+                anchorAt={intervention.startedAt}
+                live={intervention.status === 'en_cours'}
+              />
               <Typography variant="caption" color="text.secondary">
-                Par {intervention.retoucheurNom} — début {intervention.startedAt}
-                {intervention.endedAt ? ` — fin ${intervention.endedAt}` : ''}
+                Par {intervention.retoucheurNom}
                 {intervention.action ? ` — action : ${intervention.action}` : ''}
                 {intervention.notes ? ` — ${intervention.notes}` : ''}
               </Typography>

@@ -50,6 +50,37 @@ function parseStringArray(raw: string): string[] {
   }
 }
 
+/**
+ * Crée les fiches techniques brouillon (une par taille, mesures vides)
+ * pour les tailles du produit qui n'en ont pas encore. Appelée à la
+ * création du produit et quand des tailles sont ajoutées : la saisie
+ * des mesures devient l'étape suivante évidente.
+ */
+function ensureFichesForSizes(
+  db: Database.Database,
+  actor: Actor,
+  productId: number,
+): number {
+  const product = requireCatalogueProduct(db, productId);
+  const existing = db
+    .prepare(
+      'SELECT DISTINCT size_id FROM fiches_techniques WHERE product_id = ?',
+    )
+    .all(productId)
+    .map((row) => (row as { size_id: number | null }).size_id);
+  let created = 0;
+  for (const size of product.sizes) {
+    if (existing.includes(size.id)) continue;
+    db.prepare(
+      `INSERT INTO fiches_techniques
+         (product_id, size_id, mesures_json, statut, version, created_by)
+       VALUES (?, ?, '{}', 'brouillon', 1, ?)`,
+    ).run(productId, size.id, actor.id);
+    created += 1;
+  }
+  return created;
+}
+
 export function listCatalogueProducts(
   db: Database.Database,
 ): CatalogueProduct[] {
@@ -236,6 +267,8 @@ export function createCatalogueProduct(
          (product_id, family, category, size_names_json, measurement_labels_json, is_active)
        VALUES (?, ?, ?, ?, '[]', 1)`,
     ).run(inserted.lastInsertRowid, family, category, JSON.stringify(sizeNames));
+    // Fiches de mesures prêtes à remplir, une par taille sélectionnée.
+    ensureFichesForSizes(db, actor, Number(inserted.lastInsertRowid));
     return Number(inserted.lastInsertRowid);
   });
   return requireCatalogueProduct(db, productId);
@@ -290,6 +323,8 @@ export function updateCatalogueProduct(
       `UPDATE coupe_catalogue
           SET size_names_json = ?, is_active = ? WHERE product_id = ?`,
     ).run(JSON.stringify(sizeNames), isActive ? 1 : 0, productId);
+    // Tailles ajoutées : fiches de mesures créées automatiquement.
+    if (isActive) ensureFichesForSizes(db, actor, productId);
   });
   if (!isActive) {
     return { ...requireCatalogueProductLoose(db, productId) };

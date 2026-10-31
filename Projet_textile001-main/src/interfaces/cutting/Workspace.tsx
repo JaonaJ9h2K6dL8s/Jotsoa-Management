@@ -115,10 +115,21 @@ export default function Workspace() {
     [workspace, tableId],
   );
 
-  const optimizer = usePlanOptimizer({ plan, revision, roll, history, canvasRef, setToast });
+  const optimizer = usePlanOptimizer({
+    plan, revision, roll, history, canvasRef, setToast,
+    reloadPlan: async (planId: number) => {
+      const loaded = await atelierAction<PlanDTO>('plan.get', { planId });
+      refreshPlan(loaded);
+    },
+    reloadPlans: async () => {
+      const data = await loadWorkspace();
+      setWorkspace(data);
+    },
+  });
   const {
     optimizing, accepting, optimize, proposalPlacements, viewMode,
-    currentMetrics, currentWasteKg, runOptimize, runAutofill, acceptProposal, rejectProposal,
+    currentMetrics, currentWasteKg, autofill, applyingTarget,
+    runOptimize, runAutofill, applyTargetMatelas, acceptProposal, rejectProposal,
   } = optimizer;
 
   const refreshPlan = useCallback((next: PlanDTO) => {
@@ -428,6 +439,10 @@ export default function Workspace() {
               placementCount={history.state.length} canValidatePlan={workspace.canValidatePlan}
               planDirty={isDirty} validatingPlan={validatingPlan} onValidatePlan={handleValidatePlan}
               onTransfer={handleTransfer} onRemetrics={handleRemetrics}
+              autofill={autofill} applyingTarget={applyingTarget}
+              onApplyTargetMatelas={(target) => { void applyTargetMatelas(target); }}
+              onOpenPlan={(planId) => { void openPlan(planId); }}
+              rollLabel={roll?.code ?? null}
             />
           </Box>
         )}

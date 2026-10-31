@@ -56,6 +56,12 @@ export interface RtAssignmentDTO {
   status: 'affectee' | 'en_cours' | 'terminee' | 'annulee';
   notes: string | null;
   createdAt: string;
+  /** Démarrage du travail (première intervention), null si jamais démarrée. */
+  startedAt: string | null;
+  /** Fin du travail (toutes quantités traitées), null si en cours. */
+  endedAt: string | null;
+  /** Secondes travaillées cumulées (somme des interventions terminées). */
+  workedSeconds: number;
   lines: Array<{ sizeId: number; sizeLabel: string; qty: number }>;
 }
 
@@ -149,6 +155,12 @@ export interface RtDashboardDTO {
     returnedQty: number;
     irreparableQty: number;
   };
+  /** Heures travaillées par retoucheur (pauses entre interventions exclues). */
+  workedByRetoucheur: Array<{
+    retoucheurNom: string;
+    workedSeconds: number;
+    activeTasks: number;
+  }>;
   pendingRebutProposals: number;
   openAlerts: number;
   recentHistory: RtHistoryDTO[];

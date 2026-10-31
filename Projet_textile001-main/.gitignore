@@ -82,12 +82,21 @@ verification-capture/
 
 # Application packagée locale et données métier (à ne jamais publier)
 V1_jotsoa/
+V1_jotsoa_build/
+_merge_tmp/
+_debug_sidebar/
+
+# Binaire Node embarqué local (71 Mo, non source)
+resources/node.exe
 
 # Photos personnelles hors projet
 image/
 
 # Fichiers temporaires de travail
 tmp-*.txt
+build-log.txt
+desktop-log.txt
+cookies.txt
 $null
 scripts/_splash-new.txt
 

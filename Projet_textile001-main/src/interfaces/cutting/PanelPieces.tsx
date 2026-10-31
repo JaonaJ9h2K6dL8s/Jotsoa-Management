@@ -107,7 +107,7 @@ export default function PanelPieces({ revision, placedCounts, onDragPiece, onAdd
               >
                 <Miniature piece={piece} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, noWrap: true }}>
+                  <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
                     {piece.label}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>

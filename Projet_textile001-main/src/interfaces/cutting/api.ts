@@ -58,6 +58,8 @@ export interface FamilyRuleDTO {
   family: string;
   requiredPieces: string[];
   optionalPieces: string[];
+  /** Libellés des mesures à saisir sur la fiche (cm). */
+  measurementLabels?: string[];
 }
 
 export interface TableDTO {
@@ -361,6 +363,10 @@ export interface AutofillResult {
   totalPieces: number;
   /** Matelas dupliqués créés et remplis automatiquement. */
   duplicates: AutofillDuplicate[];
+  /** Base de la contrainte rouleau : métrage, poids (grammage × largeur) ou aucune. */
+  rollBasis: 'metrage' | 'poids' | 'aucun';
+  /** Poids consommé par matelas (kg), null si grammage ou largeur inconnus. */
+  weightPerMatelasKg: number | null;
 }
 
 /** Métriques enregistrées d'un plan, avant et après recalcul explicite. */

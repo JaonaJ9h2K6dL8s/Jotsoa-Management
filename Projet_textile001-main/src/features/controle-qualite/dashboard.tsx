@@ -1,6 +1,5 @@
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import List from '@mui/material/List';
@@ -9,6 +8,12 @@ import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import {
+  KpiCard,
+  SectionTitle,
+  WelcomeBanner,
+  kpiTone,
+} from '@/components/common/dashboard-kit';
 import type { CqDashboardDTO } from '@/types/cq';
 import { CONTROL_STATUS_LABELS } from '@/types/cq';
 
@@ -27,23 +32,9 @@ function CounterCard({
   value: number | string;
   href?: string;
 }) {
-  const content = (
-    <Paper variant="outlined" className="h-full p-3">
-      <Typography variant="h4" component="p" color="primary">
-        {value}
-      </Typography>
-      <Typography variant="body2">{label}</Typography>
-    </Paper>
-  );
   return (
     <Grid size={{ xs: 6, sm: 4, md: 3 }}>
-      {href ? (
-        <Link href={href} underline="none" color="inherit">
-          {content}
-        </Link>
-      ) : (
-        content
-      )}
+      <KpiCard label={label} value={value} href={href} tone={kpiTone(label.length)} />
     </Grid>
   );
 }
@@ -65,19 +56,12 @@ export default function ControleQualiteDashboard({
   const q = data.quantities;
   return (
     <Stack spacing={3}>
-      <Paper variant="outlined" className="p-6">
-        <Typography variant="h5" component="h2" gutterBottom>
-          Bienvenue, {name}
-        </Typography>
-        <Stack direction="row" spacing={1} className="mb-1" useFlexGap>
-          <Chip label="Contrôleur qualité" color="primary" size="small" />
-          <Chip label="Module Contrôle qualité" variant="outlined" size="small" />
-        </Stack>
-        <Typography color="text.secondary">
-          Réception des transferts de la couture, contrôles, défauts,
-          décisions de conformité et préparation des transferts vers le stock.
-        </Typography>
-      </Paper>
+      <WelcomeBanner
+        name={name}
+        roleLabel="Contrôleur qualité"
+        moduleLabel="Module Contrôle qualité"
+        description="Réception des transferts de la couture, contrôles, défauts, décisions de conformité et préparation des transferts vers le stock."
+      />
 
       {data.pendingRequests > 0 ? (
         <Alert severity="warning">
@@ -92,9 +76,7 @@ export default function ControleQualiteDashboard({
         </Alert>
       ) : null}
 
-      <Typography variant="h6" component="h3">
-        Contrôles par statut
-      </Typography>
+      <SectionTitle>Contrôles par statut</SectionTitle>
       <Grid container spacing={2}>
         {Object.keys(CONTROL_STATUS_LABELS).map((status) => (
           <CounterCard
@@ -106,9 +88,7 @@ export default function ControleQualiteDashboard({
         ))}
       </Grid>
 
-      <Typography variant="h6" component="h3">
-        Quantités réelles
-      </Typography>
+      <SectionTitle>Quantités réelles</SectionTitle>
       <Grid container spacing={2}>
         <CounterCard label="Transferts reçus" value={data.receptionsCount} href="/controle-qualite/receptions" />
         <CounterCard label="Pièces reçues" value={q.receivedQty} href="/controle-qualite/receptions" />
@@ -141,10 +121,8 @@ export default function ControleQualiteDashboard({
       </Grid>
 
       <Paper variant="outlined" className="p-4">
-        <Typography variant="h6" component="h3" gutterBottom>
-          Dernières opérations de contrôle qualité
-        </Typography>
-        <Divider className="mb-1" />
+        <SectionTitle>Dernières opérations de contrôle qualité</SectionTitle>
+        <Divider className="mb-1 mt-2" />
         {data.recentHistory.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             Aucune opération enregistrée pour le moment.

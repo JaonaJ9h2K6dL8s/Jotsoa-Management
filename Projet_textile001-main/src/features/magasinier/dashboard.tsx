@@ -8,19 +8,18 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { MgDashboardDTO } from '@/types/magasinier';
+import {
+  KpiCard,
+  SectionTitle,
+  WelcomeBanner,
+  kpiTone,
+} from '@/components/common/dashboard-kit';
 import { useMagasinierData } from './use-magasinier';
 
 /** Tableau de bord du chef magasinier : uniquement des données réelles. */
 
 function Metric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Paper variant="outlined" className="p-3">
-      <Typography variant="h5">{value}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-    </Paper>
-  );
+  return <KpiCard label={label} value={value} tone={kpiTone(label.length)} />;
 }
 
 export default function MagasinierDashboardView({ name }: { name: string }) {
@@ -30,11 +29,12 @@ export default function MagasinierDashboardView({ name }: { name: string }) {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5">Bienvenue, {name}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        Import des commandes PDF, préparation sur stock réel et dossiers de
-        sortie pour le contrôle sécurité.
-      </Typography>
+      <WelcomeBanner
+        name={name}
+        roleLabel="Chef magasinier"
+        moduleLabel="Module Magasin"
+        description="Import des commandes PDF, préparation sur stock réel et dossiers de sortie pour le contrôle sécurité."
+      />
       {loading ? <LinearProgress /> : null}
       {error ? <Alert severity="error">{error}</Alert> : null}
       {data ? (
@@ -57,7 +57,7 @@ export default function MagasinierDashboardView({ name }: { name: string }) {
             <Metric label="Anomalies en attente (alertes)" value={data.openAlerts} />
           </Box>
 
-          <Typography variant="subtitle1">Dernières opérations</Typography>
+          <SectionTitle>Dernières opérations</SectionTitle>
           {data.recentHistory.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               Aucune opération enregistrée.

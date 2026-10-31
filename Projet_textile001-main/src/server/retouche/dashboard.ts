@@ -85,6 +85,33 @@ export function getDashboard(actor: Actor): RtDashboardDTO {
     reason: string | null;
     created_at: string;
   }>;
+  // Heures travaillées par retoucheur : cumul des interventions
+  // terminées + segment en cours (temps réel serveur, pauses exclues).
+  const workedByRetoucheur = (
+    db
+      .prepare(
+        `SELECT u.nom || ' ' || u.prenom AS retoucheurNom,
+                COALESCE(SUM(a.worked_seconds), 0)
+                  + COALESCE(SUM(CASE WHEN i.id IS NOT NULL THEN
+                    CAST((julianday('now') - julianday(i.started_at)) * 86400 AS INTEGER)
+                  ELSE 0 END), 0) AS workedSeconds,
+                COUNT(DISTINCT i.id) AS activeTasks
+         FROM rt_assignments a
+         JOIN users u ON u.id = a.retoucheur_id
+         LEFT JOIN rt_interventions i ON i.assignment_id = a.id AND i.status = 'en_cours'
+         WHERE a.status != 'annulee'
+         GROUP BY u.id ORDER BY workedSeconds DESC`,
+      )
+      .all() as Array<{
+      retoucheurNom: string;
+      workedSeconds: number;
+      activeTasks: number;
+    }>
+  ).map((row) => ({
+    retoucheurNom: row.retoucheurNom,
+    workedSeconds: Math.max(0, Math.floor(row.workedSeconds)),
+    activeTasks: row.activeTasks,
+  }));
   return {
     requestsCount,
     pendingReception,
@@ -92,6 +119,7 @@ export function getDashboard(actor: Actor): RtDashboardDTO {
     assignmentsInProgress,
     interventionsInProgress,
     quantities,
+    workedByRetoucheur,
     pendingRebutProposals: count(
       "SELECT COUNT(*) AS total FROM rt_rebut_proposals WHERE status = 'en_attente'",
     ),

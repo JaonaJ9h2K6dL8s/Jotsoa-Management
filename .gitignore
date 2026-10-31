@@ -4,3 +4,10 @@ image/
 # Fichiers temporaires
 $null
 tmp-*.txt
+
+# Sauvegardes et bases de données locales (jamais publier)
+_merge_tmp/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite

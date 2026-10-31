@@ -31,6 +31,10 @@ interface AssignmentRow {
   status: AssignmentStatus;
   notes: string | null;
   created_at: string;
+  started_at: string | null;
+  ended_at: string | null;
+  worked_seconds: number;
+  updated_at: string;
   room_nom: string;
   line_nom: string;
   lot_code: string;
@@ -81,6 +85,10 @@ function mapAssignment(
     status: row.status,
     notes: row.notes,
     createdAt: row.created_at,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    workedSeconds: row.worked_seconds,
+    updatedAt: row.updated_at,
     sizes: (
       db
         .prepare(
@@ -288,12 +296,17 @@ export function patchAssignment(
   const action = String(input.action ?? '');
   const reason = normalizeText(input.reason, 300);
   const apply = db.transaction(() => {
+    // Suivi horaire : worked_seconds cumule les segments « en_cours »
+    // (l'ancre du segment est updated_at, posée à chaque transition).
+    const accrueWorked = "worked_seconds = worked_seconds "
+      + "+ CAST((julianday('now') - julianday(updated_at)) * 86400 AS INTEGER)";
     if (action === 'start') {
       if (!['affecte', 'en_pause', 'attente_reprise'].includes(row.status)) {
         throw new ServiceError('Cette affectation ne peut pas démarrer.', 409);
       }
       db.prepare(
-        "UPDATE couture_assignments SET status = 'en_cours', updated_at = datetime('now') WHERE id = ?",
+        "UPDATE couture_assignments SET status = 'en_cours', "
+        + "started_at = COALESCE(started_at, datetime('now')), updated_at = datetime('now') WHERE id = ?",
       ).run(id);
       setLotStatus(db, row.lot_id, 'en_cours');
     } else if (action === 'pause') {
@@ -301,7 +314,8 @@ export function patchAssignment(
         throw new ServiceError('Seule une affectation en cours peut être mise en pause.', 409);
       }
       db.prepare(
-        "UPDATE couture_assignments SET status = 'en_pause', updated_at = datetime('now') WHERE id = ?",
+        `UPDATE couture_assignments SET status = 'en_pause', ${accrueWorked}, `
+        + "updated_at = datetime('now') WHERE id = ?",
       ).run(id);
       setLotStatus(db, row.lot_id, 'en_pause');
     } else if (action === 'resume') {
@@ -309,7 +323,8 @@ export function patchAssignment(
         throw new ServiceError('Cette affectation n’est pas en pause.', 409);
       }
       db.prepare(
-        "UPDATE couture_assignments SET status = 'en_cours', updated_at = datetime('now') WHERE id = ?",
+        "UPDATE couture_assignments SET status = 'en_cours', "
+        + "started_at = COALESCE(started_at, datetime('now')), updated_at = datetime('now') WHERE id = ?",
       ).run(id);
       setLotStatus(db, row.lot_id, 'en_cours');
     } else if (action === 'block') {
@@ -319,9 +334,16 @@ export function patchAssignment(
       if (!reason) {
         throw new ServiceError('Un motif est obligatoire pour bloquer.', 400);
       }
-      db.prepare(
-        "UPDATE couture_assignments SET status = 'bloquee', updated_at = datetime('now') WHERE id = ?",
-      ).run(id);
+      if (row.status === 'en_cours') {
+        db.prepare(
+          `UPDATE couture_assignments SET status = 'bloquee', ${accrueWorked}, `
+          + "updated_at = datetime('now') WHERE id = ?",
+        ).run(id);
+      } else {
+        db.prepare(
+          "UPDATE couture_assignments SET status = 'bloquee', updated_at = datetime('now') WHERE id = ?",
+        ).run(id);
+      }
       setLotStatus(db, row.lot_id, 'bloque');
     } else if (action === 'unblock') {
       if (row.status !== 'bloquee') {
@@ -335,9 +357,17 @@ export function patchAssignment(
       if (!['en_cours', 'en_pause'].includes(row.status)) {
         throw new ServiceError('Seule une affectation active peut être terminée.', 409);
       }
-      db.prepare(
-        "UPDATE couture_assignments SET status = 'terminee', updated_at = datetime('now') WHERE id = ?",
-      ).run(id);
+      if (row.status === 'en_cours') {
+        db.prepare(
+          `UPDATE couture_assignments SET status = 'terminee', ${accrueWorked}, `
+          + "ended_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+        ).run(id);
+      } else {
+        db.prepare(
+          "UPDATE couture_assignments SET status = 'terminee', "
+          + "ended_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+        ).run(id);
+      }
     } else if (action === 'cancel') {
       if (row.status === 'annulee') {
         throw new ServiceError('Affectation déjà annulée.', 409);
@@ -345,9 +375,17 @@ export function patchAssignment(
       if (!reason) {
         throw new ServiceError('Un motif est obligatoire pour annuler.', 400);
       }
-      db.prepare(
-        "UPDATE couture_assignments SET status = 'annulee', updated_at = datetime('now') WHERE id = ?",
-      ).run(id);
+      if (row.status === 'en_cours') {
+        db.prepare(
+          `UPDATE couture_assignments SET status = 'annulee', ${accrueWorked}, `
+          + "ended_at = COALESCE(ended_at, datetime('now')), updated_at = datetime('now') WHERE id = ?",
+        ).run(id);
+      } else {
+        db.prepare(
+          "UPDATE couture_assignments SET status = 'annulee', "
+          + "ended_at = COALESCE(ended_at, datetime('now')), updated_at = datetime('now') WHERE id = ?",
+        ).run(id);
+      }
     } else if (action === 'reassign') {
       const newLineId = requireId(input.lineId, 'Nouvelle ligne');
       const newRoomId = requireId(input.roomId, 'Nouvelle salle');

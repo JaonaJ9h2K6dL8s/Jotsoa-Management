@@ -122,9 +122,12 @@ export function startIntervention(
       )
       .run(code, assignmentId, actor.id, action);
     const interventionId = Number(result.lastInsertRowid);
-    db.prepare("UPDATE rt_assignments SET status = 'en_cours' WHERE id = ?").run(
-      assignmentId,
-    );
+    // Suivi horaire : la première intervention pose started_at sur
+    // l'affectation (le temps travaillé reste la somme des interventions).
+    db.prepare(
+      "UPDATE rt_assignments SET status = 'en_cours', "
+      + "started_at = COALESCE(started_at, datetime('now')) WHERE id = ?",
+    ).run(assignmentId);
     addHistory(db, {
       action: 'INTERVENTION_DEMARREE',
       entityType: 'rt_intervention',
@@ -243,9 +246,17 @@ export function finishIntervention(
       processed: number;
     };
     if (remaining.processed >= remaining.assigned) {
-      db.prepare("UPDATE rt_assignments SET status = 'terminee' WHERE id = ?").run(
-        intervention.assignment_id,
-      );
+      // Suivi horaire : l'affectation se termine, ended_at posé et
+      // worked_seconds = somme des durées des interventions terminées.
+      db.prepare(
+        `UPDATE rt_assignments SET status = 'terminee', ended_at = datetime('now'),
+           worked_seconds = COALESCE((
+             SELECT SUM(CAST((julianday(i.ended_at) - julianday(i.started_at)) * 86400 AS INTEGER))
+             FROM rt_interventions i
+             WHERE i.assignment_id = ? AND i.status = 'terminee'
+           ), 0)
+         WHERE id = ?`,
+      ).run(intervention.assignment_id, intervention.assignment_id);
     }
     addHistory(db, {
       action: 'INTERVENTION_TERMINEE',

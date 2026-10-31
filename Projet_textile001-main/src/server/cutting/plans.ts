@@ -129,11 +129,13 @@ export interface PlanTheoreticalSummary {
 }
 
 /** Options persistées dans input_json (révision + paramètres de calcul). */
-interface PlanInputJson {
+export interface PlanInputJson {
   revisionId: number;
   wastagePct?: number;
   theoretical?: PlanTheoreticalSummary | null;
   theoreticalUnavailable?: string | null;
+  /** Plans dupliqués (matelas pleins) rattachés à ce plan source. */
+  autofillDuplicates?: number[];
 }
 
 /** Lit input_json sans jamais lever (données anciennes ou partielles). */
@@ -148,6 +150,21 @@ export function readPlanInputJson(raw: string | null): PlanInputJson {
   } catch {
     return { revisionId: 0 };
   }
+}
+
+/** Fusionne des clés dans input_json du plan (autorité serveur). */
+export function patchPlanInputJson(
+  db: Database.Database,
+  planId: number,
+  patch: Partial<PlanInputJson>,
+): void {
+  const row = db
+    .prepare('SELECT input_json FROM marker_plans WHERE id = ?')
+    .get(planId) as { input_json: string | null } | undefined;
+  if (!row) throw new ServiceError('Plan introuvable.', 404);
+  const current = readPlanInputJson(row.input_json);
+  db.prepare('UPDATE marker_plans SET input_json = ? WHERE id = ?')
+    .run(JSON.stringify({ ...current, ...patch }), planId);
 }
 
 export interface PlanItem extends PlanRow {
@@ -333,6 +350,48 @@ function tableCategory(db: Database.Database, productId: number): string {
     .prepare('SELECT category FROM coupe_catalogue WHERE product_id = ?')
     .get(productId) as { category: string } | undefined;
   return row?.category === 'enfant' ? 'enfant' : 'adulte';
+}
+
+/**
+ * Suppression d'un plan BROUILLON uniquement (statut « proposition »,
+ * jamais transféré vers un lot). Sert au recalcul du nombre de matelas :
+ * les duplicatas en trop sont retirés, les plans validés restent immuables.
+ */
+export function deleteDraftPlan(
+  db: Database.Database,
+  actor: Actor,
+  planId: number,
+): { deleted: true } {
+  assertCoupeWrite(actor);
+  const plan = getPlan(db, Number(planId));
+  if (plan.status !== 'proposition') {
+    throw new ServiceError(
+      `Plan #${planId} ${plan.status === 'valide' ? 'validé (immuable)' : plan.status} `
+        + ': seuls les brouillons peuvent être supprimés.',
+      409,
+    );
+  }
+  if (plan.lot_id !== null) {
+    throw new ServiceError(
+      `Plan #${planId} déjà transféré vers un lot : suppression impossible.`,
+      409,
+    );
+  }
+  try {
+    const result = db
+      .prepare("DELETE FROM marker_plans WHERE id = ? AND status = 'proposition' AND lot_id IS NULL")
+      .run(plan.id);
+    if (result.changes !== 1) {
+      throw new ServiceError(`Plan #${planId} n'a pas pu être supprimé.`, 409);
+    }
+  } catch (error) {
+    if (error instanceof ServiceError) throw error;
+    throw new ServiceError(
+      `Plan #${planId} référencé par d'autres données : suppression impossible.`,
+      409,
+    );
+  }
+  return { deleted: true };
 }
 
 /** Recontrôle géométrique complet côté serveur. */

@@ -28,7 +28,7 @@ import { saveFiche, validateFiche } from '@/server/cutting/fiches';
 import { generateRevision, getRevision } from '@/server/cutting/patterns';
 import { importRevision } from '@/server/cutting/pattern-import';
 import { validateRevision } from '@/server/cutting/pattern-validate';
-import { createPlan, getPlan, verifyPlan } from '@/server/cutting/plans';
+import { createPlan, deleteDraftPlan, getPlan, verifyPlan } from '@/server/cutting/plans';
 import { optimizePlan } from '@/server/cutting/plans-optimize';
 import { autofillPlan } from '@/server/cutting/plans-autofill';
 import { remetricsPlan, savePlan, validatePlan } from '@/server/cutting/plans-save';
@@ -70,6 +70,7 @@ const CHEF_ACTIONS = new Set([
   'plan.autofill',
   'plan.save',
   'plan.validate',
+  'plan.delete',
   'plan.get',
   'plan.remetrics',
   'pattern.get',
@@ -183,8 +184,13 @@ async function handle(
         colorNom: input.colorNom ?? null,
         mesures: input.mesures,
       }) };
-    case 'fiche.validate':
-      return { item: validateFiche(db, actor, Number(input.ficheId)) };
+    case 'fiche.validate': {
+      const fiche = validateFiche(db, actor, Number(input.ficheId));
+      // Génération automatique du patron : la fiche vient d'être validée,
+      // le plan est immédiatement disponible dans l'atelier.
+      const revision = generateRevision(db, actor, Number(input.ficheId));
+      return { item: fiche, revision };
+    }
     case 'pattern.generate':
       return { item: generateRevision(db, actor, Number(input.ficheId)) };
     case 'pattern.import':
@@ -214,11 +220,16 @@ async function handle(
     case 'plan.optimize':
       return { result: optimizePlan(db, actor, Number(input.planId)) };
     case 'plan.autofill':
-      return { result: autofillPlan(db, actor, Number(input.planId)) };
+      return { result: autofillPlan(db, actor, Number(input.planId),
+        input.targetMatelas !== undefined
+          ? { targetMatelas: Number(input.targetMatelas) }
+          : {}) };
     case 'plan.save':
       return { item: savePlan(db, actor, Number(input.planId), input.placements) };
     case 'plan.validate':
       return { item: validatePlan(db, actor, Number(input.planId)) };
+    case 'plan.delete':
+      return { result: deleteDraftPlan(db, actor, Number(input.planId)) };
     case 'plan.get':
       return { item: getPlan(db, Number(input.planId)) };
     case 'plan.remetrics':

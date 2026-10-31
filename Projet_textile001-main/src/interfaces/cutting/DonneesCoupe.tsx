@@ -231,6 +231,9 @@ export default function DonneesCoupe() {
         products={data.catalogue}
         sizes={data.sizes}
         familyRules={data.familyRules ?? []}
+        fiches={data.fiches}
+        revisions={data.revisions}
+        canValidateFiche={data.canValidatePlan}
         onChanged={reload}
         onToast={setToast}
         onError={setError}

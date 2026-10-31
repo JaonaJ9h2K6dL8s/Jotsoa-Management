@@ -11,7 +11,7 @@ import { listCatalogueProducts } from '@/server/cutting/catalogue';
 import { listFiches } from '@/server/cutting/fiches';
 import { listRevisions } from '@/server/cutting/patterns';
 import { listPlans } from '@/server/cutting/plans';
-import { buildFamilyPieces, PATTERN_FAMILIES } from '@/server/cutting/pattern-rules';
+import { buildFamilyPieces, PATTERN_FAMILIES, ruleMeasurementLabels } from '@/server/cutting/pattern-rules';
 
 /**
  * Contexte complet de l'atelier Coupe en un seul appel.
@@ -61,6 +61,7 @@ export async function GET(): Promise<NextResponse> {
             optionalPieces: pieces
               .filter((piece) => !piece.required)
               .map((piece) => piece.label),
+            measurementLabels: ruleMeasurementLabels(family),
           };
         }),
       },

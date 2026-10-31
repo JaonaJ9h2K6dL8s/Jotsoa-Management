@@ -8,6 +8,12 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { StDashboardDTO } from '@/types/stock';
+import {
+  KpiCard,
+  SectionTitle,
+  WelcomeBanner,
+  kpiTone,
+} from '@/components/common/dashboard-kit';
 import { useStockData } from './use-stock';
 
 /**
@@ -16,14 +22,7 @@ import { useStockData } from './use-stock';
  */
 
 function Metric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Paper variant="outlined" className="p-3">
-      <Typography variant="h5">{value}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-    </Paper>
-  );
+  return <KpiCard label={label} value={value} tone={kpiTone(label.length)} />;
 }
 
 export default function StockDashboard({ name }: { name: string }) {
@@ -34,10 +33,12 @@ export default function StockDashboard({ name }: { name: string }) {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5">Bienvenue, {name}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        Espace de gestion des cartons et du stock des vêtements finis.
-      </Typography>
+      <WelcomeBanner
+        name={name}
+        roleLabel="Gestionnaire stock"
+        moduleLabel="Module Stock"
+        description="Espace de gestion des cartons et du stock des vêtements finis."
+      />
       {loading ? <LinearProgress /> : null}
       {error ? <Alert severity="error">{error}</Alert> : null}
       {dash ? (
@@ -64,7 +65,7 @@ export default function StockDashboard({ name }: { name: string }) {
             </Alert>
           ) : null}
 
-          <Typography variant="subtitle1">Stock disponible par lot et taille</Typography>
+          <SectionTitle>Stock disponible par lot et taille</SectionTitle>
           {dash.balances.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               Aucun stock disponible pour le moment.
@@ -95,9 +96,7 @@ export default function StockDashboard({ name }: { name: string }) {
             </Paper>
           )}
 
-          <Typography variant="subtitle1">
-            Déchets textiles (stock distinct, en kg)
-          </Typography>
+          <SectionTitle>Déchets textiles (stock distinct, en kg)</SectionTitle>
           {dash.waste.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               Aucun déchet enregistré par la Coupe.
@@ -115,7 +114,7 @@ export default function StockDashboard({ name }: { name: string }) {
             </Paper>
           )}
 
-          <Typography variant="subtitle1">Dernières opérations</Typography>
+          <SectionTitle>Dernières opérations</SectionTitle>
           {dash.recentHistory.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               Aucune opération enregistrée.

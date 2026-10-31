@@ -43,20 +43,20 @@ export default function AppShell({
           zIndex: 0,
         },
         '&::before': {
-          width: 340,
-          height: 340,
-          top: -140,
-          left: -120,
+          width: 380,
+          height: 380,
+          top: -160,
+          left: -130,
           background:
-            'radial-gradient(circle, rgba(31,174,116,0.12) 0%, rgba(31,174,116,0) 70%)',
+            'radial-gradient(circle, rgba(14,107,68,0.12) 0%, rgba(14,107,68,0) 70%)',
         },
         '&::after': {
-          width: 420,
-          height: 420,
-          bottom: -180,
-          right: -140,
+          width: 460,
+          height: 460,
+          bottom: -200,
+          right: -160,
           background:
-            'radial-gradient(circle, rgba(59,130,214,0.10) 0%, rgba(59,130,214,0) 70%)',
+            'radial-gradient(circle, rgba(169,129,46,0.10) 0%, rgba(169,129,46,0) 70%)',
         },
       }}
     >
@@ -80,7 +80,11 @@ export default function AppShell({
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { width: DRAWER_WIDTH },
+            '& .MuiDrawer-paper': {
+              width: DRAWER_WIDTH,
+              backgroundImage: 'linear-gradient(180deg, #0d1410 0%, #0a0f0c 100%)',
+              borderRight: '1px solid rgba(216,196,154,0.16)',
+            },
           }}
         >
           <SidebarContent roleCode={user.roleCode} />
@@ -93,9 +97,10 @@ export default function AppShell({
               display: { xs: 'none', md: 'block' },
               '& .MuiDrawer-paper': {
                 width: DRAWER_WIDTH,
-                borderRight: '1px solid rgba(30,36,48,0.06)',
+                borderRight: '1px solid rgba(216,196,154,0.16)',
                 boxShadow: 'none',
-                backgroundImage: 'none',
+                backgroundImage:
+                  'linear-gradient(180deg, #0d1410 0%, #0a0f0c 100%)',
               },
             }}
           >

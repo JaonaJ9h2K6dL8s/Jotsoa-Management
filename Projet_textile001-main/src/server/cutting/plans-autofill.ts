@@ -5,7 +5,9 @@ import { computeMetrics } from '@/lib/cutting/optimizer';
 import { fillMatelas } from '@/lib/cutting/fill-matelas';
 import type { OptimizerPiece, OptimizerPlacement } from '@/lib/cutting/optimizer';
 import { validateCandidate } from '@/lib/cutting/nesting-validate';
-import { createPlan, getPlan, readPlanInputJson, readRevisionId } from './plans';
+import {
+  createPlan, deleteDraftPlan, getPlan, patchPlanInputJson, readPlanInputJson, readRevisionId,
+} from './plans';
 import { savePlan } from './plans-save';
 import { requireValidatedRevision } from './patterns';
 import { assertCoupeWrite } from './common';
@@ -60,6 +62,19 @@ export interface AutofillResult {
   totalPieces: number;
   /** Matelas dupliqués créés et remplis automatiquement. */
   duplicates: AutofillDuplicate[];
+  /** Base du calcul rouleau : métrage, poids (grammage × largeur) ou aucune contrainte. */
+  rollBasis: 'metrage' | 'poids' | 'aucun';
+  /** Poids consommé par matelas (kg), null si grammage ou largeur inconnus. */
+  weightPerMatelasKg: number | null;
+}
+
+export interface AutofillOptions {
+  /**
+   * Nombre de matelas (tables) voulu par l'utilisateur : override manuel
+   * du nombre déduit du stock rouleau. Les duplicatas en trop sont
+   * supprimés (brouillons uniquement), les manquants créés pleins.
+   */
+  targetMatelas?: number;
 }
 
 /**
@@ -101,6 +116,7 @@ export function autofillPlan(
   db: Database.Database,
   actor: Actor,
   planId: number,
+  options: AutofillOptions = {},
 ): AutofillResult {
   assertCoupeWrite(actor);
   const plan = getPlan(db, Number(planId));
@@ -189,7 +205,37 @@ export function autofillPlan(
     && rollRow?.remaining_weight_kg != null
     ? Math.max(1, Math.floor(rollRow.remaining_weight_kg / weightPerMatelasKg))
     : 1;
-  const totalMatelas = Math.max(1, Math.min(maxByLength, maxByWeight));
+  const autoMatelas = Math.max(1, Math.min(maxByLength, maxByWeight));
+
+  // Base de la contrainte rouleau (traçabilité interface).
+  const rollBasis: 'metrage' | 'poids' | 'aucun' = availableM !== null
+    ? 'metrage'
+    : availableFromWeight !== null
+      ? 'poids'
+      : 'aucun';
+
+  // Override manuel : le nombre de matelas voulu par l'utilisateur.
+  // Borné par le stock rouleau QUAND il est connu ; sans stock fiable
+  // (rouleau non suivi), l'utilisateur reste maître du nombre.
+  const targetMatelas = options.targetMatelas;
+  if (targetMatelas !== undefined
+    && (!Number.isFinite(targetMatelas) || targetMatelas < 1 || targetMatelas > 500)) {
+    throw new ServiceError('Nombre de matelas invalide (1 à 500).', 400);
+  }
+  if (targetMatelas !== undefined && rollBasis !== 'aucun' && targetMatelas > autoMatelas) {
+    const raison = rollBasis === 'metrage'
+      ? `métrage disponible ${rollAvailableM?.toFixed(1)} m`
+      : `poids disponible ${rollRow?.remaining_weight_kg?.toFixed(2)} kg`;
+    throw new ServiceError(
+      `Impossible de dupliquer ${targetMatelas} matelas : le rouleau `
+        + `(grammage ${rollRow?.grammage_g_m2 ?? '?'} g/m², largeur `
+        + `${rollRow?.usable_width_cm ?? '?'} cm) permet au maximum `
+        + `${autoMatelas} matelas pleins avec ${raison} `
+        + `(${fabricPerMatelasM.toFixed(2)} m par matelas).`,
+      409,
+    );
+  }
+  const totalMatelas = targetMatelas ?? autoMatelas;
 
   const garmentsPerMatelas = capacitySets * layers;
   const setsOnPlan = capacitySets;
@@ -209,17 +255,49 @@ export function autofillPlan(
   }
 
   // 3. Duplication : matelas 2..N créés PLEINS et enregistrés.
+  // Les duplicatas d'un calcul précédent (tracés dans input_json du plan
+  // source) sont conservés, complétés ou supprimés selon le total voulu.
   const duplicates: AutofillDuplicate[] = [];
-  if (totalMatelas > 1) {
+  const previousIds = (readPlanInputJson(plan.input_json).autofillDuplicates ?? [])
+    .filter((id) => Number.isInteger(id) && id > 0);
+  const keptIds: number[] = [];
+  const removedIds: number[] = [];
+  if (totalMatelas > 1 || previousIds.length > 0) {
     if (plan.roll_id === null || plan.coupe_table_id === null) {
       throw new ServiceError(
-        `Le rouleau permet ${totalMatelas} matelas mais le plan n'a ni `
+        `Le calcul demande ${totalMatelas} matelas mais le plan n'a ni `
           + 'rouleau ni table assignés : assignez-les puis relancez.',
         409,
       );
     }
+    // Réconciliation des duplicatas existants : un duplicata reste
+    // valable s'il existe encore en brouillon non transféré ; les autres
+    // sont retirés (en trop ou invalides).
+    for (const id of previousIds) {
+      if (keptIds.length >= totalMatelas - 1) {
+        removedIds.push(id);
+        continue;
+      }
+      const dup = db.prepare(
+        "SELECT status, lot_id FROM marker_plans WHERE id = ?",
+      ).get(id) as { status: string; lot_id: number | null } | undefined;
+      if (dup && dup.status === 'proposition' && dup.lot_id === null) {
+        keptIds.push(id);
+      } else {
+        removedIds.push(id);
+      }
+    }
+    for (const id of removedIds) {
+      try {
+        deleteDraftPlan(db, actor, id);
+      } catch {
+        // Duplicata déjà validé ou référencé : il reste en place et
+        // compte toujours comme un matelas réel (non supprimable).
+        keptIds.push(id);
+      }
+    }
     const wastagePct = readPlanInputJson(plan.input_json).wastagePct ?? null;
-    for (let index = 2; index <= totalMatelas; index += 1) {
+    while (keptIds.length < totalMatelas - 1) {
       const created = createPlan(db, actor, {
         revisionId,
         rollId: plan.roll_id,
@@ -231,8 +309,12 @@ export function autofillPlan(
         wastagePct,
       });
       savePlan(db, actor, created.id, trimToSets(raw.placements, pieces, capacitySets));
-      duplicates.push({ planId: created.id, sets: capacitySets });
+      keptIds.push(created.id);
     }
+    // Traçabilité : la liste des duplicatas vivants est enregistrée dans
+    // le plan source (recalculé à chaque calcul).
+    patchPlanInputJson(db, plan.id, { autofillDuplicates: keptIds });
+    for (const id of keptIds) duplicates.push({ planId: id, sets: capacitySets });
   }
 
   // Métriques recalculées sur le layout RÉELLEMENT retenu.
@@ -262,5 +344,7 @@ export function autofillPlan(
     totalGarments,
     totalPieces: totalGarments * piecesPerSet,
     duplicates,
+    rollBasis,
+    weightPerMatelasKg,
   };
 }

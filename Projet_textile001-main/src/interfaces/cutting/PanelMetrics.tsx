@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -9,10 +10,11 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
-import type { CutTransferResult, OptimizeResult, PlanDTO, RemetricsResult } from './api';
+import type { AutofillResult, CutTransferResult, OptimizeResult, PlanDTO, RemetricsResult } from './api';
 import type { PlacementSummary } from '@/lib/cutting/metrics';
 import {
   checkMarkerCoherence, maxPersistedLengthCm, wastePctOf,
@@ -53,6 +55,16 @@ interface PanelMetricsProps {
   }) => Promise<CutTransferResult>;
   /** Recalcul explicite des métriques (serveur, plan brouillon). */
   onRemetrics: (planId: number) => Promise<RemetricsResult>;
+  /** Dernier calcul automatique multi-matelas (résumé de production). */
+  autofill: AutofillResult | null;
+  /** Application d'un nombre de tables en cours. */
+  applyingTarget: boolean;
+  /** Applique un nombre de matelas (tables) voulu. */
+  onApplyTargetMatelas: (target: number) => void;
+  /** Ouvre un plan dupliqué dans le canvas. */
+  onOpenPlan: (planId: number) => void;
+  /** Code du rouleau assigné au plan (affichage). */
+  rollLabel: string | null;
 }
 
 const FMT_AREA = (value: number | null | undefined): string =>
@@ -63,12 +75,33 @@ export default function PanelMetrics(props: PanelMetricsProps) {
     metrics, wasteKgValue, invalidCount, summary, plan, modelLabel,
     placementCount, canValidatePlan, planDirty, validatingPlan, onValidatePlan,
     onTransfer, onRemetrics,
+    autofill, applyingTarget, onApplyTargetMatelas, onOpenPlan, rollLabel,
   } = props;
   const hasPlacement = metrics !== null && metrics.placedCount > 0;
   const wastePct = metrics ? wastePctOf(metrics) : null;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [remetricsPreview, setRemetricsPreview] = useState(false);
   const [remetricsBusy, setRemetricsBusy] = useState(false);
+  // Édition du calcul automatique : nombre de tables (matelas) et total
+  // de pièces voulu par l'utilisateur. Synchronisé avec le dernier calcul.
+  const [tablesInput, setTablesInput] = useState('');
+  const [totalInput, setTotalInput] = useState('');
+  useEffect(() => {
+    setTablesInput(autofill ? String(autofill.totalMatelas) : '');
+    setTotalInput(autofill ? String(autofill.totalPieces) : '');
+  }, [autofill]);
+  const planLocked = plan?.status === 'valide';
+  const applyTables = () => {
+    const value = Number(tablesInput);
+    if (Number.isFinite(value) && value >= 1) onApplyTargetMatelas(Math.floor(value));
+  };
+  const applyTotal = () => {
+    if (!autofill) return;
+    const value = Number(totalInput);
+    if (!Number.isFinite(value) || value < 1) return;
+    const perMatelas = autofill.piecesPerMatelas; // jeux × couches × pièces par jeu
+    onApplyTargetMatelas(Math.max(1, Math.ceil(value / perMatelas)));
+  };
   // Cohérence des métriques enregistrées : longueur persistée comparée
   // à la longueur recalculée depuis les contours persistés (tolérance
   // explicite de 1 cm). Jamais une écriture automatique.
@@ -104,6 +137,77 @@ export default function PanelMetrics(props: PanelMetricsProps) {
       borderLeft: '1px solid', borderColor: 'divider',
       p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1,
     }}>
+      {autofill && (
+        <>
+          <Typography variant="subtitle2">Production — calcul automatique</Typography>
+          <Row label={`Patron (1 jeu complet)`} value={`${autofill.piecesPerSet} pièce(s)`} />
+          <Row
+            label="Matelas plein"
+            value={`${autofill.capacitySets} jeux × ${autofill.layers} couche(s) `
+              + `= ${autofill.garmentsPerMatelas} vêtements / ${autofill.piecesPerMatelas} pièces`}
+          />
+          <Row
+            label={`Rouleau ${rollLabel ?? '—'}`}
+            value={autofill.rollAvailableM !== null
+              ? `${autofill.rollAvailableM.toFixed(1)} m dispo (base : `
+                + `${autofill.rollBasis === 'poids' ? 'poids · grammage × largeur' : 'métrage'})`
+              : 'stock non suivi — calcul libre'}
+          />
+          <Row
+            label="Consommation par matelas"
+            value={`${autofill.fabricPerMatelasM.toFixed(2)} m`
+              + (autofill.weightPerMatelasKg !== null
+                ? ` · ${autofill.weightPerMatelasKg.toFixed(2)} kg` : '')}
+          />
+          {autofill.rollRemainingAfterM !== null && (
+            <Row label="Reste rouleau après coupe" value={`${autofill.rollRemainingAfterM.toFixed(1)} m`} />
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              size="small" label="Nombre de tables" value={tablesInput}
+              onChange={(event) => setTablesInput(event.target.value)}
+              disabled={applyingTarget || planLocked}
+              sx={{ width: 130, '& input': { py: 0.5 } }}
+              inputProps={{ inputMode: 'numeric' }}
+            />
+            <Button size="small" variant="outlined" disabled={applyingTarget || planLocked} onClick={applyTables}>
+              Appliquer
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              size="small" label="Total pièces" value={totalInput}
+              onChange={(event) => setTotalInput(event.target.value)}
+              disabled={applyingTarget || planLocked}
+              sx={{ width: 130, '& input': { py: 0.5 } }}
+              inputProps={{ inputMode: 'numeric' }}
+            />
+            <Button size="small" variant="outlined" disabled={applyingTarget || planLocked} onClick={applyTotal}>
+              Appliquer
+            </Button>
+          </Box>
+          <Typography variant="caption" color="text.secondary">
+            Total = tables × {autofill.capacitySets} jeux × {autofill.layers} couche(s) ×{' '}
+            {autofill.piecesPerSet} pièces. Le total est arrondi au jeu complet supérieur
+            (un jeu incomplet ne produit aucun vêtement).
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            <Chip
+              size="small" color="primary"
+              label={`Plan #${plan?.id ?? '—'} (${autofill.setsOnPlan} jeux)`}
+              onClick={() => plan && onOpenPlan(plan.id)}
+            />
+            {autofill.duplicates.map((dup) => (
+              <Chip
+                key={dup.planId} size="small" variant="outlined"
+                label={`Matelas #${dup.planId} (${dup.sets} jeux)`}
+                onClick={() => onOpenPlan(dup.planId)}
+              />
+            ))}
+          </Box>
+          <Divider />
+        </>
+      )}
       <Typography variant="subtitle2">Rendement du placement</Typography>
       <Typography variant="caption" color="text.secondary">
         Calculé automatiquement (longueur réellement occupée) — modifiable nulle part.

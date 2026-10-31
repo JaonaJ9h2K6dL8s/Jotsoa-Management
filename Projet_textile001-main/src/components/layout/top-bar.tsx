@@ -77,7 +77,7 @@ export default function TopBar({ user }: { user: SessionUser }) {
       color="inherit"
       elevation={0}
       sx={{
-        borderBottom: '1px solid rgba(30,36,48,0.06)',
+        borderBottom: '1px solid rgba(25,31,28,0.07)',
         width: {
           md: `calc(100% - ${sidebarCollapsed ? 0 : DRAWER_WIDTH}px)`,
         },
@@ -117,7 +117,12 @@ export default function TopBar({ user }: { user: SessionUser }) {
           variant="h6"
           component="h1"
           noWrap
-          sx={{ fontWeight: 800, fontSize: isWorkshop ? 16 : 20 }}
+          sx={{
+            fontFamily: 'var(--font-display), Georgia, serif',
+            fontWeight: 600,
+            fontSize: isWorkshop ? 16 : 21,
+            letterSpacing: '0.01em',
+          }}
         >
           {user.roleLabel}
         </Typography>
@@ -143,14 +148,14 @@ export default function TopBar({ user }: { user: SessionUser }) {
               py: 1,
               fontSize: 14,
               borderRadius: '12px',
-              backgroundColor: '#f3f5fb',
+              backgroundColor: 'rgba(25,31,28,0.045)',
               border: '1px solid transparent',
-              transition: 'border-color .15s, background-color .15s',
-              '&:hover': { backgroundColor: '#eef1f9' },
+              transition: 'border-color .15s, background-color .15s, box-shadow .15s',
+              '&:hover': { backgroundColor: 'rgba(25,31,28,0.07)' },
               '&:focus-within': {
                 backgroundColor: '#fff',
-                borderColor: 'primary.main',
-                boxShadow: '0 0 0 3px rgba(15,122,77,0.14)',
+                borderColor: 'rgba(169,129,46,0.55)',
+                boxShadow: '0 0 0 3px rgba(169,129,46,0.16)',
               },
             }}
           />
@@ -214,8 +219,9 @@ export default function TopBar({ user }: { user: SessionUser }) {
               fontSize: 14,
               fontWeight: 700,
               color: '#fff',
-              background: 'linear-gradient(135deg, #0a5c3c, #1fae74)',
-              boxShadow: '0 4px 10px rgba(15,122,77,0.35)',
+              background: 'linear-gradient(135deg, #0a4f33, #0e6b44 55%, #1c9e6b)',
+              boxShadow:
+                'inset 0 0 0 1px rgba(216,196,154,0.45), 0 4px 10px rgba(14,107,68,0.35)',
             }}
           >
             {(user.prenom?.[0] ?? user.nom[0] ?? '?').toUpperCase()}

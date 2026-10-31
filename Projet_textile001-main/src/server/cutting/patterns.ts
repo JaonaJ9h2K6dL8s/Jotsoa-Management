@@ -4,6 +4,7 @@ import type { Actor } from '@/server/users/users-service';
 import type { GrainDirection, Point, Rotation } from '@/lib/cutting/types';
 import {
   assertCoupeAdmin,
+  assertCoupePlanValidation,
   assertCoupeWrite,
   inTransaction,
   requireId,
@@ -314,7 +315,9 @@ export function generateRevision(
   actor: Actor,
   ficheId: number,
 ): RevisionItem {
-  assertCoupeWrite(actor);
+  // Chef de coupe ou admin (la validation d'une fiche par l'admin
+  // déclenche aussi la génération automatique).
+  assertCoupePlanValidation(actor);
   const fiche = requireValidatedFiche(db, ficheId);
   if (fiche.sizeId === null) {
     throw new ServiceError(

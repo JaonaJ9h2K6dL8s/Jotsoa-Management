@@ -4,7 +4,7 @@ import type { Actor } from '@/server/users/users-service';
 import { parseNumberInput } from '@/lib/coupe-validation';
 import type { FicheMesures } from './pattern-rules';
 import {
-  assertCoupeAdmin,
+  assertCoupePlanValidation,
   assertCoupeWrite,
   inTransaction,
   optionalId,
@@ -296,13 +296,13 @@ function updateDraftFiche(
   return getFiche(db, ficheId);
 }
 
-/** Validation définitive : administrateur uniquement. */
+/** Validation définitive : chef de coupe ou administrateur. */
 export function validateFiche(
   db: Database.Database,
   actor: Actor,
   ficheId: number,
 ): FicheItem {
-  assertCoupeAdmin(actor);
+  assertCoupePlanValidation(actor);
   const fiche = getFiche(db, ficheId);
   if (fiche.statut === 'valide') return fiche;
   if (fiche.statut === 'archive') {

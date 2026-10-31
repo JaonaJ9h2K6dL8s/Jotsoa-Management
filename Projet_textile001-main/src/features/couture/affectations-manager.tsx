@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -8,12 +8,17 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import Divider from '@mui/material/Divider';
 import LinearProgress from '@mui/material/LinearProgress';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import {
+  formatWorkDuration,
+  parseServerTimestamp,
+} from '@/components/common/work-timer';
 import type {
   AssignmentDTO,
   CoutureRoomDTO,
@@ -24,8 +29,19 @@ import { sendCouture, useCoutureData } from './use-couture';
 
 /**
  * Affectation des lots reçus aux salles et lignes de couture, avec
- * transitions contrôlées et réaffectation tracée.
+ * transitions contrôlées, réaffectation tracée et suivi horaire
+ * (début / fin / durée travaillée, pauses exclues, par salle).
  */
+
+/** Secondes travaillées affichables d'une affectation (live si en cours). */
+function assignmentLiveSeconds(assignment: AssignmentDTO, now: number): number {
+  if (!assignment.startedAt) return 0;
+  if (assignment.status !== 'en_cours') return assignment.workedSeconds;
+  const anchor = Date.parse(
+    `${assignment.updatedAt.includes('T') ? assignment.updatedAt : assignment.updatedAt.replace(' ', 'T')}Z`,
+  );
+  return assignment.workedSeconds + Math.max(0, (now - anchor) / 1000);
+}
 
 interface SizeBalance {
   sizeId: number;
@@ -220,6 +236,47 @@ export default function AffectationsManager() {
   const [assignLot, setAssignLot] = useState<LotBalanceDTO | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  // Totaux horaires par salle : tick chaque seconde si au moins une
+  // affectation est en cours (chrono temps réel).
+  const list = assignments.data ?? [];
+  const hasLive = list.some((item) => item.status === 'en_cours');
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!hasLive) return undefined;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [hasLive]);
+
+  // Total travaillé par salle (toutes affectations, pauses exclues).
+  const roomTotals = useMemo(() => {
+    const totals = new Map<
+      string,
+      { seconds: number; active: number; firstStart: number | null; lastEnd: number | null }
+    >();
+    for (const assignment of list) {
+      const entry =
+        totals.get(assignment.roomNom) ??
+        { seconds: 0, active: 0, firstStart: null, lastEnd: null };
+      entry.seconds += assignmentLiveSeconds(assignment, now);
+      if (assignment.status === 'en_cours') entry.active += 1;
+      if (assignment.startedAt) {
+        const start = parseServerTimestamp(assignment.startedAt).getTime();
+        if (entry.firstStart === null || start < entry.firstStart) {
+          entry.firstStart = start;
+        }
+      }
+      const end =
+        assignment.status === 'en_cours'
+          ? now
+          : assignment.endedAt
+            ? parseServerTimestamp(assignment.endedAt).getTime()
+            : null;
+      if (end !== null && (entry.lastEnd === null || end > entry.lastEnd)) entry.lastEnd = end;
+      totals.set(assignment.roomNom, entry);
+    }
+    return totals;
+  }, [list, now]);
+
   const refreshAll = useMemo(
     () => () => {
       void balances.refresh();
@@ -264,6 +321,37 @@ export default function AffectationsManager() {
           </Paper>
         ))}
       </Stack>
+
+      <Stack spacing={1}>
+        <Typography variant="subtitle1">
+          Heures travaillées par salle (pauses exclues)
+        </Typography>
+        <Stack direction="row" spacing={1} useFlexGap className="flex-wrap">
+          {[...roomTotals.entries()].map(([roomNom, entry]) => (
+            <Paper key={roomNom} variant="outlined" className="p-2">
+              <Typography variant="body2">{roomNom}</Typography>
+              <Typography
+                variant="body1"
+                sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}
+                color={entry.active > 0 ? 'success.main' : 'text.primary'}
+              >
+                {formatWorkDuration(entry.seconds)}
+                {entry.active > 0 ? ` ▸ ${entry.active} en cours` : ''}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {entry.firstStart
+                  ? `Début : ${new Date(entry.firstStart).toLocaleTimeString('fr-FR')}`
+                  : 'Pas encore démarré'}
+                {entry.lastEnd
+                  ? ` · Fin : ${new Date(entry.lastEnd).toLocaleTimeString('fr-FR')}`
+                  : ''}
+              </Typography>
+            </Paper>
+          ))}
+        </Stack>
+      </Stack>
+
+      <Divider />
 
       <Stack spacing={1}>
         <Typography variant="subtitle1">Affectations</Typography>

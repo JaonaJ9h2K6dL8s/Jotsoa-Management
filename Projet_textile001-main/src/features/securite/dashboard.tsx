@@ -8,19 +8,18 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { SecDashboardDTO } from '@/types/securite';
+import {
+  KpiCard,
+  SectionTitle,
+  WelcomeBanner,
+  kpiTone,
+} from '@/components/common/dashboard-kit';
 import { useSecuriteData } from './use-securite';
 
 /** Tableau de bord du chef sécurité : uniquement des données réelles. */
 
 function Metric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Paper variant="outlined" className="p-3">
-      <Typography variant="h5">{value}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-    </Paper>
-  );
+  return <KpiCard label={label} value={value} tone={kpiTone(label.length)} />;
 }
 
 export default function SecuriteDashboardView({ name }: { name: string }) {
@@ -30,12 +29,12 @@ export default function SecuriteDashboardView({ name }: { name: string }) {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h5">Bienvenue, {name}</Typography>
-      <Typography variant="body2" color="text.secondary">
-        Contrôle indépendant des dossiers de sortie : comptage physique,
-        anomalies, décision et confirmation de sortie. Le stock n’est jamais
-        modifié directement par la sécurité.
-      </Typography>
+      <WelcomeBanner
+        name={name}
+        roleLabel="Chef sécurité"
+        moduleLabel="Module Sécurité"
+        description="Contrôle indépendant des dossiers de sortie : comptage physique, anomalies, décision et confirmation de sortie. Le stock n'est jamais modifié directement par la sécurité."
+      />
       {loading ? <LinearProgress /> : null}
       {error ? <Alert severity="error">{error}</Alert> : null}
       {data ? (
@@ -54,7 +53,7 @@ export default function SecuriteDashboardView({ name }: { name: string }) {
             <Metric label="Sorties refusées" value={data.sortiesRefused} />
           </Box>
 
-          <Typography variant="subtitle1">Dernières opérations</Typography>
+          <SectionTitle>Dernières opérations</SectionTitle>
           {data.recentHistory.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               Aucune opération enregistrée.

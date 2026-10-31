@@ -1,6 +1,5 @@
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import List from '@mui/material/List';
@@ -9,6 +8,12 @@ import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import {
+  KpiCard,
+  SectionTitle,
+  WelcomeBanner,
+  kpiTone,
+} from '@/components/common/dashboard-kit';
 import type { CoutureDashboardDTO } from '@/types/couture';
 import {
   COUTURE_LOT_STATUS_LABELS,
@@ -30,23 +35,9 @@ function CounterCard({
   value: number | string;
   href?: string;
 }) {
-  const content = (
-    <Paper variant="outlined" className="h-full p-3">
-      <Typography variant="h4" component="p" color="primary">
-        {value}
-      </Typography>
-      <Typography variant="body2">{label}</Typography>
-    </Paper>
-  );
   return (
     <Grid size={{ xs: 6, sm: 4, md: 3 }}>
-      {href ? (
-        <Link href={href} underline="none" color="inherit">
-          {content}
-        </Link>
-      ) : (
-        content
-      )}
+      <KpiCard label={label} value={value} href={href} tone={kpiTone(label.length)} />
     </Grid>
   );
 }
@@ -69,19 +60,12 @@ export default function CoutureDashboard({
   const assignments = data.assignmentsByStatus;
   return (
     <Stack spacing={3}>
-      <Paper variant="outlined" className="p-6">
-        <Typography variant="h5" component="h2" gutterBottom>
-          Bienvenue, {name}
-        </Typography>
-        <Stack direction="row" spacing={1} className="mb-1" useFlexGap>
-          <Chip label="Chef de couture" color="primary" size="small" />
-          <Chip label="Module Couture" variant="outlined" size="small" />
-        </Stack>
-        <Typography color="text.secondary">
-          Réceptions de la coupe, affectations aux salles et lignes,
-          production réelle et transferts vers le contrôle qualité.
-        </Typography>
-      </Paper>
+      <WelcomeBanner
+        name={name}
+        roleLabel="Chef de couture"
+        moduleLabel="Module Couture"
+        description="Réceptions de la coupe, affectations aux salles et lignes, production réelle et transferts vers le contrôle qualité."
+      />
 
       {data.criticalIncidents > 0 ? (
         <Alert severity="error">
@@ -102,9 +86,7 @@ export default function CoutureDashboard({
         </Alert>
       ) : null}
 
-      <Typography variant="h6" component="h3">
-        Lots de couture
-      </Typography>
+      <SectionTitle>Lots de couture</SectionTitle>
       <Grid container spacing={2}>
         {Object.keys(COUTURE_LOT_STATUS_LABELS).map((status) => (
           <CounterCard
@@ -116,9 +98,7 @@ export default function CoutureDashboard({
         ))}
       </Grid>
 
-      <Typography variant="h6" component="h3">
-        Affectations
-      </Typography>
+      <SectionTitle>Affectations</SectionTitle>
       <Grid container spacing={2}>
         {Object.keys(ASSIGNMENT_STATUS_LABELS).map((status) => (
           <CounterCard
@@ -130,9 +110,7 @@ export default function CoutureDashboard({
         ))}
       </Grid>
 
-      <Typography variant="h6" component="h3">
-        Quantités réelles
-      </Typography>
+      <SectionTitle>Quantités réelles</SectionTitle>
       <Grid container spacing={2}>
         <CounterCard label="Pièces reçues de la coupe" value={data.quantities.receivedQty} href="/couture/receptions" />
         <CounterCard label="Quantités contestées (écarts)" value={data.quantities.contestedQty} href="/couture/receptions" />
@@ -160,10 +138,8 @@ export default function CoutureDashboard({
       ) : null}
 
       <Paper variant="outlined" className="p-4">
-        <Typography variant="h6" component="h3" gutterBottom>
-          Dernières opérations de couture
-        </Typography>
-        <Divider className="mb-1" />
+        <SectionTitle>Dernières opérations de couture</SectionTitle>
+        <Divider className="mb-1 mt-2" />
         {data.recentHistory.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             Aucune opération enregistrée pour le moment.

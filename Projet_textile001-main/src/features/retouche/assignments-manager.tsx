@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -14,7 +14,12 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import type { RtAssignmentDTO, RtRequestDTO } from '@/types/retouche';
+import WorkTimer from '@/components/common/work-timer';
+import type {
+  RtAssignmentDTO,
+  RtInterventionDTO,
+  RtRequestDTO,
+} from '@/types/retouche';
 import { sendRt, useRtData } from './use-retouche';
 
 /**
@@ -159,9 +164,23 @@ export default function AssignmentsManager() {
   const requests = useRtData<RequestsPayload>('/api/retouche/requests');
   const assignments = useRtData<RtAssignmentDTO[]>('/api/retouche/assignments');
   const references = useRtData<ReferencesPayload>('/api/retouche/references');
+  const interventions = useRtData<RtInterventionDTO[]>('/api/retouche/interventions');
   const [message, setMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selected, setSelected] = useState<RtRequestDTO | null>(null);
+
+  // Chrono temps réel : l'ancre du segment en cours est l'intervention
+  // ouverte de l'affectation (le cumul serveur n'inclut que les
+  // interventions terminées).
+  const openByAssignment = useMemo(() => {
+    const map = new Map<number, RtInterventionDTO>();
+    for (const intervention of interventions.data ?? []) {
+      if (intervention.status === 'en_cours') {
+        map.set(intervention.assignmentId, intervention);
+      }
+    }
+    return map;
+  }, [interventions.data]);
 
   const refreshAll = () => {
     void requests.refresh();
@@ -185,7 +204,9 @@ export default function AssignmentsManager() {
           Aucune affectation enregistrée.
         </Typography>
       ) : (
-        assignments.data?.map((assignment) => (
+        assignments.data?.map((assignment) => {
+          const openIntervention = openByAssignment.get(assignment.id);
+          return (
           <Paper key={assignment.id} variant="outlined" className="p-3">
             <Stack spacing={1}>
               <Stack direction="row" spacing={1} alignItems="center" useFlexGap>
@@ -217,6 +238,13 @@ export default function AssignmentsManager() {
                   .map((line) => `${line.sizeLabel} : ${line.qty}`)
                   .join(' · ')}
               </Typography>
+              <WorkTimer
+                startedAt={assignment.startedAt}
+                endedAt={assignment.endedAt}
+                workedSeconds={assignment.workedSeconds}
+                anchorAt={openIntervention?.startedAt ?? assignment.startedAt ?? assignment.createdAt}
+                live={Boolean(openIntervention)}
+              />
               <Typography variant="caption" color="text.secondary">
                 Affectée par {assignment.assignedByName ?? '—'} le{' '}
                 {assignment.createdAt}
@@ -224,7 +252,8 @@ export default function AssignmentsManager() {
               </Typography>
             </Stack>
           </Paper>
-        ))
+          );
+        })
       )}
 
       <Typography variant="subtitle1">

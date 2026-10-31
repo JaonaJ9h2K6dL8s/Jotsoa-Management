@@ -64,6 +64,9 @@ function mapAssignment(
     status: 'affectee' | 'en_cours' | 'terminee' | 'annulee';
     notes: string | null;
     created_at: string;
+    started_at: string | null;
+    ended_at: string | null;
+    worked_seconds: number;
   },
 ): RtAssignmentDTO {
   const lines = db
@@ -87,6 +90,9 @@ function mapAssignment(
     status: row.status,
     notes: row.notes,
     createdAt: row.created_at,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    workedSeconds: row.worked_seconds,
     lines: lines.map((line) => ({
       sizeId: line.size_id,
       sizeLabel: line.size_label,

@@ -169,6 +169,14 @@ export interface AssignmentDTO {
   status: AssignmentStatus;
   notes: string | null;
   createdAt: string;
+  /** Démarrage du travail (première mise en cours), null si jamais démarrée. */
+  startedAt: string | null;
+  /** Fin du travail (action « terminer »), null si en cours ou non démarrée. */
+  endedAt: string | null;
+  /** Secondes travaillées cumulées, pauses exclues (ancre : updated_at). */
+  workedSeconds: number;
+  /** Ancre du segment en cours (dernière transition d'état). */
+  updatedAt: string;
   sizes: Array<{ sizeId: number; sizeLabel: string; plannedQty: number; sewnQty: number }>;
 }
 
